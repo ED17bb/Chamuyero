@@ -1,8 +1,8 @@
-import { useState, useEffect, useLayoutEffect } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { 
   Users, UserX, Play, ArrowRight, RefreshCw, AlertCircle, Home, Zap,
   Leaf, Coffee, Tv, Trophy, Sparkles, Globe, Ghost, Music, Cpu, Layers, Hand,
-  Plus, Trash2, Edit3, Check
+  Plus, Trash2, Edit3, Check, Camera, X
 } from 'lucide-react';
 
 // --- PALETA DE COLORES PERSONALIZABLE ---
@@ -49,10 +49,11 @@ const WORD_CATEGORIES: Record<string, string[]> = {
 
 const CATEGORY_KEYS = Object.keys(WORD_CATEGORIES);
 
-// Tipo para el jugador
+// Tipo para el jugador (Actualizado con foto)
 type Player = {
   id: number;
   name: string;
+  photo?: string; // URL base64 de la imagen
 };
 
 export default function ElImpostorApp() {
@@ -75,8 +76,6 @@ export default function ElImpostorApp() {
   }, []);
 
   // --- ESTADOS ---
-  
-  // Lista de Jugadores (Ahora son objetos con nombre)
   const [players, setPlayers] = useState<Player[]>([
     { id: 1, name: "Jugador 1" },
     { id: 2, name: "Jugador 2" },
@@ -93,9 +92,65 @@ export default function ElImpostorApp() {
   const [isCoinFlipped, setIsCoinFlipped] = useState<boolean>(false);
   const [countdown, setCountdown] = useState<number>(5);
 
+  // Estados de Cámara
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [cameraPlayerIndex, setCameraPlayerIndex] = useState<number | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // --- LÓGICA DE CÁMARA ---
+  const startCamera = async (index: number) => {
+    setCameraPlayerIndex(index);
+    setIsCameraOpen(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      console.error("Error accediendo a la cámara:", err);
+      alert("No se pudo acceder a la cámara. Verifica los permisos.");
+      setIsCameraOpen(false);
+    }
+  };
+
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+    }
+    setIsCameraOpen(false);
+    setCameraPlayerIndex(null);
+  };
+
+  const takePhoto = () => {
+    if (videoRef.current && canvasRef.current && cameraPlayerIndex !== null) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      const context = canvas.getContext('2d');
+      
+      if (context) {
+        // Configurar canvas al tamaño del video
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        // Dibujar frame actual
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Obtener data URL
+        const photoUrl = canvas.toDataURL('image/png');
+        
+        // Guardar en el jugador
+        const newPlayers = [...players];
+        newPlayers[cameraPlayerIndex].photo = photoUrl;
+        setPlayers(newPlayers);
+        
+        stopCamera();
+      }
+    }
+  };
+
   // --- LÓGICA DE JUGADORES ---
-  
-  // Agregar jugador
   const addPlayer = () => {
     if (players.length < 10) {
       const newId = players.length + 1;
@@ -103,7 +158,6 @@ export default function ElImpostorApp() {
     }
   };
 
-  // Eliminar jugador
   const removePlayer = (indexToRemove: number) => {
     if (players.length > 3) {
       const newPlayers = players.filter((_, index) => index !== indexToRemove);
@@ -111,14 +165,12 @@ export default function ElImpostorApp() {
     }
   };
 
-  // Editar nombre
   const updatePlayerName = (index: number, newName: string) => {
     const newPlayers = [...players];
     newPlayers[index].name = newName;
     setPlayers(newPlayers);
   };
 
-  // Validar impostores al cambiar número de jugadores
   const getMaxImpostors = (count: number): number => {
     if (count <= 4) return 1;
     if (count <= 6) return 2;
@@ -136,8 +188,6 @@ export default function ElImpostorApp() {
   const decrementImpostors = () => { if (numImpostors > 1) setNumImpostors(prev => prev - 1); };
 
   // --- LÓGICA DE JUEGO ---
-
-  // Conteo regresivo
   useEffect(() => {
     let timer: any;
     if (gameStage === 'countdown') {
@@ -258,12 +308,9 @@ export default function ElImpostorApp() {
         <div className="z-10 w-full max-w-md p-5 flex flex-col h-full max-h-screen">
           
           {/* HEADER */}
-          {gameStage !== 'countdown' && gameStage !== 'passAndPlay' && (
+          {gameStage !== 'countdown' && gameStage !== 'passAndPlay' && !isCameraOpen && (
             <header className={`flex justify-between items-center mb-6 ${THEME.card} p-4 rounded-2xl border border-slate-700 shadow-xl`}>
               <div className="flex items-center gap-3">
-                  {/* AQUÍ PUEDES PONER TU IMAGEN. Descomenta la siguiente linea y comenta el div del icono Zap */}
-                  {/* <img src="/tu-icono.png" alt="Logo" className="w-10 h-10 object-contain" /> */}
-                  
                   <div className={`${THEME.secondary} p-2 rounded-lg`}>
                       <Zap size={24} className="text-slate-900" strokeWidth={3} />
                   </div>
@@ -279,6 +326,34 @@ export default function ElImpostorApp() {
             </header>
           )}
 
+          {/* --- MODAL DE CÁMARA (OVERLAY) --- */}
+          {isCameraOpen && (
+            <div className="absolute inset-0 z-[100] bg-black flex flex-col items-center justify-center p-4">
+              <div className="w-full max-w-sm bg-slate-900 rounded-3xl border border-slate-700 overflow-hidden shadow-2xl">
+                 <div className="p-4 flex justify-between items-center border-b border-slate-700 bg-slate-800">
+                    <h3 className="text-white font-bold">Tomar Selfie</h3>
+                    <button onClick={stopCamera} className="text-slate-400 hover:text-white">
+                       <X size={24} />
+                    </button>
+                 </div>
+                 <div className="relative aspect-square bg-black">
+                    <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover transform scale-x-[-1]" />
+                    {/* Guía circular para la cara */}
+                    <div className="absolute inset-0 border-[40px] border-black/50 rounded-full"></div>
+                 </div>
+                 <div className="p-6 flex justify-center bg-slate-900">
+                    <button 
+                      onClick={takePhoto}
+                      className="w-16 h-16 rounded-full bg-white border-4 border-slate-300 shadow-lg active:scale-90 transition-transform flex items-center justify-center"
+                    >
+                      <div className="w-12 h-12 bg-transparent border-2 border-black rounded-full"></div>
+                    </button>
+                 </div>
+              </div>
+              <canvas ref={canvasRef} className="hidden" />
+            </div>
+          )}
+
           {/* --- PANTALLA: MENÚ PRINCIPAL (SETUP) --- */}
           {gameStage === 'setup' && (
             <div className="flex-1 flex flex-col justify-center space-y-6 animate-fade-in">
@@ -292,7 +367,22 @@ export default function ElImpostorApp() {
                 
                 <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                        <Users size={28} className="text-white group-hover:text-purple-400 transition-colors" />
+                        {/* Muestra avatares de los primeros 3 jugadores si tienen foto */}
+                        <div className="flex -space-x-3">
+                           {players.slice(0, 3).map(p => (
+                             <div key={p.id} className="w-10 h-10 rounded-full border-2 border-slate-800 bg-slate-700 overflow-hidden">
+                                {p.photo ? (
+                                  <img src={p.photo} alt={p.name} className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-slate-500"><Users size={16} /></div>
+                                )}
+                             </div>
+                           ))}
+                           {players.length > 3 && (
+                             <div className="w-10 h-10 rounded-full border-2 border-slate-800 bg-slate-800 flex items-center justify-center text-xs font-bold text-white">+{players.length - 3}</div>
+                           )}
+                        </div>
+
                         <div className="text-left">
                             <span className="text-xl font-extrabold uppercase text-white block">Jugadores</span>
                             <span className="text-slate-400 text-sm font-semibold">{players.length} participantes</span>
@@ -308,7 +398,7 @@ export default function ElImpostorApp() {
                     </p>
                 </div>
                 <p className="mt-3 text-center text-purple-400 font-bold text-sm uppercase tracking-wider flex items-center justify-center gap-1">
-                    Agregar / Editar nombres <ArrowRight size={16} />
+                    Configurar nombres y fotos <ArrowRight size={16} />
                 </p>
               </button>
 
@@ -342,22 +432,40 @@ export default function ElImpostorApp() {
             <div className="flex-1 flex flex-col space-y-4 animate-fade-in overflow-hidden">
                 <div className="text-center mb-2">
                     <h2 className="text-xl font-black text-white uppercase">Lista de Jugadores</h2>
-                    <p className="text-slate-400 text-sm">Edita los nombres o agrega más</p>
+                    <p className="text-slate-400 text-sm">Edita nombres y agrega fotos</p>
                 </div>
 
                 <div className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-hide">
                     {players.map((player, index) => (
                         <div key={player.id} className="flex items-center gap-2 animate-fade-in">
-                            <div className="flex-1 relative">
-                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-                                    <Users size={16} />
-                                </div>
+                            <div className="flex-1 relative flex items-center gap-2">
+                                
+                                {/* BOTÓN DE FOTO / AVATAR */}
+                                <button 
+                                  onClick={() => startCamera(index)}
+                                  className="w-12 h-12 flex-shrink-0 rounded-xl bg-slate-800 border border-slate-600 overflow-hidden relative hover:border-purple-500 transition-colors group"
+                                >
+                                   {player.photo ? (
+                                     <>
+                                       <img src={player.photo} alt={player.name} className="w-full h-full object-cover" />
+                                       <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                          <Camera size={20} className="text-white" />
+                                       </div>
+                                     </>
+                                   ) : (
+                                     <div className="w-full h-full flex items-center justify-center text-slate-500 hover:text-purple-400">
+                                       <Camera size={24} />
+                                     </div>
+                                   )}
+                                </button>
+
+                                {/* INPUT DE NOMBRE */}
                                 <input 
                                     type="text" 
                                     value={player.name}
                                     onChange={(e) => updatePlayerName(index, e.target.value)}
                                     maxLength={15}
-                                    className={`w-full bg-slate-800 text-white font-bold py-3 pl-10 pr-4 rounded-xl border border-slate-600 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 transition-all`}
+                                    className={`w-full bg-slate-800 text-white font-bold py-3 px-4 rounded-xl border border-slate-600 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 transition-all`}
                                 />
                             </div>
                             <button 
@@ -468,12 +576,26 @@ export default function ElImpostorApp() {
               <div className="perspective-1000 w-72 h-72 cursor-pointer group" onClick={handleFlipCoin}>
                   <div className={`relative w-full h-full duration-700 transform-style-3d transition-transform ${isCoinFlipped ? 'rotate-y-180' : ''}`}>
                     
-                    {/* CARA FRONTAL (INCÓGNITA) */}
-                    <div className={`absolute w-full h-full backface-hidden rounded-full border-8 border-slate-800 shadow-[0_0_50px_rgba(0,0,0,0.5)] flex items-center justify-center bg-gradient-to-br from-yellow-400 to-yellow-600`}>
-                        <div className="text-center p-6 border-4 border-yellow-300/50 rounded-full w-56 h-56 flex flex-col items-center justify-center">
-                           <Hand size={48} className="text-yellow-900 mb-2 animate-bounce" />
-                           <p className="text-yellow-900 font-black text-2xl uppercase leading-none">Toca para<br/>Girar</p>
-                        </div>
+                    {/* CARA FRONTAL (INCÓGNITA CON FOTO) */}
+                    <div className={`absolute w-full h-full backface-hidden rounded-full border-8 border-slate-800 shadow-[0_0_50px_rgba(0,0,0,0.5)] flex items-center justify-center bg-gradient-to-br from-yellow-400 to-yellow-600 overflow-hidden`}>
+                        {/* Si tiene foto, la mostramos en grande */}
+                        {players[currentPlayerIndex].photo ? (
+                          <>
+                             <img src={players[currentPlayerIndex].photo} alt="Player" className="w-full h-full object-cover" />
+                             {/* Overlay para texto */}
+                             <div className="absolute inset-0 bg-black/30 flex flex-col items-center justify-center">
+                                <Hand size={48} className="text-white mb-2 animate-bounce drop-shadow-md" />
+                                <p className="text-white font-black text-2xl uppercase leading-none drop-shadow-md">Toca para<br/>Girar</p>
+                             </div>
+                          </>
+                        ) : (
+                          // Diseño por defecto si no tiene foto
+                          <div className="text-center p-6 border-4 border-yellow-300/50 rounded-full w-56 h-56 flex flex-col items-center justify-center">
+                             <Hand size={48} className="text-yellow-900 mb-2 animate-bounce" />
+                             <p className="text-yellow-900 font-black text-2xl uppercase leading-none">Toca para<br/>Girar</p>
+                          </div>
+                        )}
+                        
                         {/* Brillo */}
                         <div className="absolute top-0 left-0 w-full h-full rounded-full bg-white opacity-10 pointer-events-none"></div>
                     </div>
