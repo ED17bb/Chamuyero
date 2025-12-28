@@ -19,6 +19,13 @@ const THEME = {
   danger: "bg-red-500",
 };
 
+// --- RECURSOS: PROPS DE SHERLOCK (SVGs Base64) ---
+// Sombrero Deerstalker
+const HAT_SRC = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cGF0aCBmaWxsPSIjM2UzZTNlIiBkPSJNMjU2IDMyYy02NiAwLTEyNiA2LTE1MiA2Mi05IDE5LTE2IDU2LTQgNzYgMTIgMjAgMzggMjggMzggMjhoMjM2czI2LTggMzgtMjhjMTItMjAgNS01Ny00LTc2LTI2LTU2LTg2LTYyLTE1Mi02MnoiLz48cGF0aCBmaWxsPSIjNDg0ODQ4IiBkPSJNMjU2IDEwMmMtNTggMC0xMTAgNC0xMzIgNDAtMiA0LTMgOC0yIDEyIDUgMTUgMjYgMjYgMjYgMjZoMzI4czIxLTExIDI2LTI2YzEtNCAwLTgtMi0xMi0yMi0zNi03NC00MC0xMzItNDB6Ii8+PHBhdGggZmlsbD0iIzNlM2UzZSIgZD0iTTM3NiAxOTJjLTIwLTYtNjItMTAtMTIwLTEwcy0xMDAgNC0xMjAgMTBjLTQ4IDE0LTQ2IDM4LTQ2IDM4aDMzMnMwLTI0LTQ2LTM4eiIvPjxwYXRoIGZpbGw9IiM1OTU5NTkiIGQ9Ik00NjYgMjM4Yy0yMCAwLTM4LTE4LTM4LTM4IDAtMjYgMTYtNDYgNTYtNjYgNi0zIDEyIDIgMTIgOGwwIDYwYzAgMjAtMTIgMzYtMzAgMzZ6TTEwNiAyMzhjLTIwIDAtMzAtMTYtMzAtMzZsMC02MGMwLTYgNi0xMSAxMi04IDQwIDIwIDU2IDQwIDU2IDY2IDAgMjAtMTggMzgtMzggMzh6Ii8+PC9zdmc+`;
+
+// Pipa
+const PIPE_SRC = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cGF0aCBmaWxsPSIjOGI0NTEzIiBkPSJNNDI1LjcgMTEyLjljLTE4LjYtMzYuNy01NC4zLTYxLjEtOTQuMy02NC41bC0yLjctLjItMjEuNSAxNDEuNmM1NS4xIDExLjEgOTMuMiA1MC42IDExOC41IDk5LjNsLjEuMy0uMS0xNzYuNXoiLz48cGF0aCBmaWxsPSIjYTA1MjJkIiBkPSJNMzMzLjEgMTkxLjNsMjEuNS0xNDEuNi0yNjguMyA1My44Yy0yMy4xIDQuNi0zOC4zIDI3LTMzLjcgNTAuMyA0LjYgMjMuMyAyNyAzOC4zIDUwLjMgMzMuN2wxNjUuOS0zMy4yYzEyLjYtMi41IDI1LjUgMy42IDMyLjQgMTQuNyA2LjkgMTEuMSA2LjUgMjQuNC0xLjEgMzUuNi03LjYgMTEuMi0yMS4yIDExLjktMzIgOS42bDMuNi0uN3YtMjEuN2w2MS40LTEuNXoiLz48cGF0aCBmaWxsPSIjM2UzZTNlIiBkPSJNMzAyLjYgNDkuN2wtNS4xIDMzLjYgNTkuMi0xMS45IDEuMS03LjFjNC42LTMwLjEtMTYuMi01OC42LTQ2LjMtNjQuNi0zMC4xLTYtNTguNiAxNC44LTY0LjYgNDQuOXExLjkgMjIuOSAxNS43IDM3LjF6Ii8+PC9zdmc+`;
+
 // --- MAPA DE ICONOS POR CATEGORÍA ---
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   "Animales y Naturaleza": <Leaf size={32} />,
@@ -97,6 +104,16 @@ export default function ElImpostorApp() {
   const [cameraPlayerIndex, setCameraPlayerIndex] = useState<number | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  
+  // Referencias para las imágenes de los props
+  const hatImgRef = useRef<HTMLImageElement>(new Image());
+  const pipeImgRef = useRef<HTMLImageElement>(new Image());
+
+  // Cargar imágenes de props al inicio
+  useEffect(() => {
+    hatImgRef.current.src = HAT_SRC;
+    pipeImgRef.current.src = PIPE_SRC;
+  }, []);
 
   // --- LÓGICA DE CÁMARA ---
   const startCamera = async (index: number) => {
@@ -133,11 +150,36 @@ export default function ElImpostorApp() {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         
-        // Espejo horizontal para que se sienta como un espejo
+        // Espejo horizontal
         context.translate(canvas.width, 0);
         context.scale(-1, 1);
         
+        // 1. Dibujar Video
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Restaurar contexto para dibujar los props sin espejo (o mantener espejo si queremos que sigan la lógica)
+        // Mantenemos espejo para que coincida con lo que ve el usuario
+        
+        // Calcular posiciones relativas (ajustar según necesidad)
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        
+        // 2. Dibujar Sombrero (Arriba del centro)
+        // Ajustamos tamaño relativo al canvas
+        const hatWidth = canvas.width * 0.55; 
+        const hatHeight = hatWidth * 0.6; // Proporción aprox
+        // Invertimos la coordenada X para el drawImage porque el contexto está en scale(-1, 1)
+        // Para dibujar centrado en un contexto espejado: (canvas.width - x - width)
+        
+        // Posición deseada visualmente: Centro X, Arriba Y
+        // Al estar espejado el contexto, dibujamos normal
+        context.drawImage(hatImgRef.current, centerX - hatWidth/2, centerY - canvas.height * 0.45, hatWidth, hatHeight);
+
+        // 3. Dibujar Pipa (Abajo derecha visualmente -> Abajo izquierda en contexto espejado)
+        const pipeWidth = canvas.width * 0.25;
+        const pipeHeight = pipeWidth;
+        context.drawImage(pipeImgRef.current, centerX + canvas.width * 0.1, centerY + canvas.height * 0.15, pipeWidth, pipeHeight);
+
         const photoUrl = canvas.toDataURL('image/png');
         
         const newPlayers = [...players];
@@ -289,13 +331,15 @@ export default function ElImpostorApp() {
         .backface-hidden { backface-visibility: hidden; }
         .rotate-y-180 { transform: rotateY(180deg); }
         
-        /* FILTRO ESTILO SHERLOCK HOLMES / VINTAGE */
-        .sherlock-filter {
-            filter: sepia(0.8) contrast(1.2) brightness(0.9) grayscale(0.2);
-        }
-        .vintage-overlay {
-            background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.8) 100%);
+        /* FILTRO "DIBUJO A TINTA VINTAGE" - Más agresivo para parecer dibujo */
+        .sherlock-sketch-filter {
+            filter: grayscale(100%) contrast(150%) brightness(1.1) sepia(0.6);
             mix-blend-mode: multiply;
+        }
+        /* Fondo de papel viejo */
+        .paper-texture {
+            background-color: #e3d0b1;
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%239C92AC' fill-opacity='0.1' fill-rule='evenodd'/%3E%3C/svg%3E");
         }
       `}} />
 
@@ -333,21 +377,37 @@ export default function ElImpostorApp() {
             </header>
           )}
 
-          {/* --- MODAL DE CÁMARA --- */}
+          {/* --- MODAL DE CÁMARA (Probador Sherlock) --- */}
           {isCameraOpen && (
             <div className="absolute inset-0 z-[100] bg-black flex flex-col items-center justify-center p-4">
               <div className="w-full max-w-sm bg-slate-900 rounded-3xl border border-slate-700 overflow-hidden shadow-2xl">
                  <div className="p-4 flex justify-between items-center border-b border-slate-700 bg-slate-800">
-                    <h3 className="text-white font-bold">Tomar Selfie</h3>
+                    <h3 className="text-white font-bold">Modo Detective</h3>
                     <button onClick={stopCamera} className="text-slate-400 hover:text-white">
                        <X size={24} />
                     </button>
                  </div>
                  <div className="relative aspect-square bg-black overflow-hidden">
-                    {/* Filtro Sherlock en tiempo real para previsualizar */}
-                    <div className="absolute inset-0 pointer-events-none z-20 vintage-overlay opacity-50"></div>
-                    <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover transform scale-x-[-1] sherlock-filter" />
-                    <div className="absolute inset-0 border-[40px] border-black/50 rounded-full z-10"></div>
+                    <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover transform scale-x-[-1]" />
+                    
+                    {/* GUIAS VISUALES (Props superpuestos para alinear) */}
+                    <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center z-20">
+                        {/* Sombrero Guía */}
+                        <img 
+                            src={HAT_SRC} 
+                            className="absolute top-[5%] w-[55%] opacity-80 drop-shadow-lg" 
+                            style={{ filter: 'drop-shadow(0 0 5px black)' }}
+                        />
+                        {/* Pipa Guía */}
+                        <img 
+                            src={PIPE_SRC} 
+                            className="absolute bottom-[15%] right-[10%] w-[25%] opacity-80 transform scale-x-[-1]" 
+                            style={{ filter: 'drop-shadow(0 0 5px black)' }}
+                        />
+                        <div className="absolute bottom-4 bg-black/60 px-4 py-1 rounded-full text-xs text-white">
+                            Alinea tu cara con el sombrero
+                        </div>
+                    </div>
                  </div>
                  <div className="p-6 flex justify-center bg-slate-900">
                     <button 
@@ -374,11 +434,14 @@ export default function ElImpostorApp() {
                     <div className="flex items-center gap-3">
                         <div className="flex -space-x-3">
                            {players.slice(0, 3).map(p => (
-                             <div key={p.id} className="w-10 h-10 rounded-full border-2 border-slate-800 bg-slate-700 overflow-hidden">
+                             <div key={p.id} className="w-10 h-10 rounded-full border-2 border-slate-800 bg-[#e3d0b1] overflow-hidden relative">
                                 {p.photo ? (
-                                  <img src={p.photo} alt={p.name} className="w-full h-full object-cover sherlock-filter" />
+                                  <>
+                                    <div className="absolute inset-0 paper-texture opacity-50 mix-blend-multiply"></div>
+                                    <img src={p.photo} alt={p.name} className="w-full h-full object-cover sherlock-sketch-filter" />
+                                  </>
                                 ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-slate-500"><Users size={16} /></div>
+                                  <div className="w-full h-full flex items-center justify-center text-slate-900/50"><Users size={16} /></div>
                                 )}
                              </div>
                            ))}
@@ -434,7 +497,7 @@ export default function ElImpostorApp() {
             <div className="flex-1 flex flex-col space-y-4 animate-fade-in overflow-hidden">
                 <div className="text-center mb-2">
                     <h2 className="text-xl font-black text-white uppercase">Lista de Jugadores</h2>
-                    <p className="text-slate-400 text-sm">Edita nombres y agrega fotos</p>
+                    <p className="text-slate-400 text-sm">¡Ponte el sombrero para la foto!</p>
                 </div>
 
                 <div className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-hide">
@@ -443,18 +506,19 @@ export default function ElImpostorApp() {
                             <div className="flex-1 relative flex items-center gap-2">
                                 <button 
                                   onClick={() => startCamera(index)}
-                                  className="w-12 h-12 flex-shrink-0 rounded-xl bg-slate-800 border border-slate-600 overflow-hidden relative hover:border-purple-500 transition-colors group"
+                                  className="w-12 h-12 flex-shrink-0 rounded-xl bg-[#e3d0b1] border border-slate-600 overflow-hidden relative hover:border-purple-500 transition-colors group"
                                 >
                                    {player.photo ? (
                                      <>
-                                       {/* Aplicamos filtro Sherlock también en la miniatura */}
-                                       <img src={player.photo} alt={player.name} className="w-full h-full object-cover sherlock-filter" />
-                                       <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                       {/* Fondo de papel */}
+                                       <div className="absolute inset-0 paper-texture opacity-50 mix-blend-multiply pointer-events-none"></div>
+                                       <img src={player.photo} alt={player.name} className="w-full h-full object-cover sherlock-sketch-filter" />
+                                       <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20">
                                           <Camera size={20} className="text-white" />
                                        </div>
                                      </>
                                    ) : (
-                                     <div className="w-full h-full flex items-center justify-center text-slate-500 hover:text-purple-400">
+                                     <div className="w-full h-full flex items-center justify-center text-slate-900/50 hover:text-purple-700">
                                        <Camera size={24} />
                                      </div>
                                    )}
@@ -573,34 +637,32 @@ export default function ElImpostorApp() {
                   <div className="perspective-1000 w-72 h-72 cursor-pointer group mb-6" onClick={handleFlipCoin}>
                       <div className={`relative w-full h-full duration-700 transform-style-3d transition-transform ${isCoinFlipped ? 'rotate-y-180' : ''}`}>
                         
-                        {/* CARA FRONTAL (INCÓGNITA CON FOTO ESTILO SHERLOCK) */}
-                        <div className={`absolute w-full h-full backface-hidden rounded-full border-8 border-slate-800 shadow-[0_0_50px_rgba(0,0,0,0.5)] flex items-center justify-center bg-yellow-900 overflow-hidden`}>
+                        {/* CARA FRONTAL (INCÓGNITA CON FOTO SHERLOCK) */}
+                        <div className={`absolute w-full h-full backface-hidden rounded-full border-8 border-slate-800 shadow-[0_0_50px_rgba(0,0,0,0.5)] flex items-center justify-center bg-[#e3d0b1] overflow-hidden`}>
+                            {/* Fondo de papel viejo */}
+                            <div className="absolute inset-0 paper-texture opacity-100 mix-blend-multiply z-0 pointer-events-none"></div>
+                            
                             {players[currentPlayerIndex].photo ? (
-                              <div className="relative w-full h-full">
-                                  {/* Capa de mezcla color sepia/marrón */}
-                                  <div className="absolute inset-0 bg-[#704214] mix-blend-color z-10 opacity-60 pointer-events-none"></div>
-                                  {/* Viñeta oscura */}
-                                  <div className="absolute inset-0 vintage-overlay z-20 pointer-events-none"></div>
-                                  
-                                  {/* Imagen con filtros CSS */}
+                              <div className="relative w-full h-full z-10">
+                                  {/* Filtro Sherlock aplicado sobre la foto compuesta */}
                                   <img 
                                     src={players[currentPlayerIndex].photo} 
                                     alt="Player" 
-                                    className="w-full h-full object-cover sherlock-filter" 
+                                    className="w-full h-full object-cover sherlock-sketch-filter" 
                                   />
                                   
-                                  {/* Icono de Lupa decorativo superpuesto */}
+                                  {/* Icono de Lupa decorativo */}
                                   <div className="absolute bottom-4 right-4 z-30 opacity-80 drop-shadow-lg">
-                                      <Search size={48} className="text-white/80" strokeWidth={3} />
+                                      <Search size={48} className="text-black/60" strokeWidth={3} />
                                   </div>
                               </div>
                             ) : (
-                              <div className="flex items-center justify-center w-full h-full bg-slate-800">
-                                 <Hand size={80} className="text-slate-700 animate-pulse" />
+                              <div className="flex items-center justify-center w-full h-full z-10">
+                                 <Hand size={80} className="text-slate-800/50 animate-pulse" />
                               </div>
                             )}
                             {/* Brillo en el vidrio de la moneda */}
-                            <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/10 to-transparent pointer-events-none z-40"></div>
+                            <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/20 to-transparent pointer-events-none z-40"></div>
                         </div>
 
                         {/* CARA TRASERA (INFORMACIÓN) */}
