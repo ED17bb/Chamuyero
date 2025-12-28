@@ -1,6 +1,6 @@
 import { useState, useEffect, useLayoutEffect } from 'react';
 import { 
-  Users, UserX, Play, ArrowRight, RefreshCw, ChevronUp, AlertCircle, Home, Zap, Smile,
+  Users, UserX, Play, ArrowRight, RefreshCw, AlertCircle, Home, Zap,
   Leaf, Coffee, Tv, Trophy, Sparkles, Globe, Ghost, Music, Cpu, Layers, Hand
 } from 'lucide-react';
 
