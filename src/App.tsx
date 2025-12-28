@@ -1,8 +1,8 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { 
   Users, UserX, Play, ArrowRight, RefreshCw, AlertCircle, Home, Zap,
-  Leaf, Coffee, Tv, Trophy, Sparkles, Globe, Ghost, Music, Cpu, Layers, Hand,
-  Plus, Trash2, Edit3, Check, Camera, X
+  Coffee, Tv, Trophy, Sparkles, Globe, Ghost, Music, Cpu, Layers, Hand,
+  Plus, Trash2, Edit3, Check, Camera, X, Utensils, BookOpen
 } from 'lucide-react';
 
 // --- PALETA DE COLORES PERSONALIZABLE ---
@@ -21,7 +21,8 @@ const THEME = {
 
 // --- MAPA DE ICONOS POR CATEGORÍA ---
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
-  "Animales y Naturaleza": <Leaf size={32} />,
+  "Comida": <Utensils size={32} />,
+  "Historia": <BookOpen size={32} />,
   "Vida Cotidiana": <Coffee size={32} />,
   "Anime": <Zap size={32} />,
   "Cine y Televisión": <Tv size={32} />,
@@ -33,18 +34,81 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   "Ciencia y Tecnología": <Cpu size={32} />
 };
 
-// --- BANCO DE PALABRAS ---
+// --- BANCO DE PALABRAS (EXPANDIDO A ~350 PALABRAS) ---
 const WORD_CATEGORIES: Record<string, string[]> = {
-  "Animales y Naturaleza": ["León", "Elefante", "Jirafa", "Tiburón", "Águila", "Pingüino", "Canguro", "Bosque", "Desierto", "Volcán", "Cascada", "Huracán", "Koala", "Oso Panda", "Delfín", "Cactus", "Rosa", "Selva", "Montaña", "Relámpago"],
-  "Vida Cotidiana": ["Cepillo de dientes", "Sartén", "Almohada", "Llaves", "Reloj", "Espejo", "Cafetera", "Microondas", "Zapatos", "Paraguas", "Mochila", "Computadora", "Silla", "Cama", "Jabón", "Toalla", "Billetera", "Lentes", "Cuaderno"],
-  "Anime": ["Goku", "Naruto", "Pikachu", "Luffy", "Sailor Moon", "Totoro", "Eva 01", "Titan Colosal", "Death Note", "Dragon Ball", "One Piece", "Pokemon", "Espada", "Ninja", "Super Saiyajin", "Carta de Yugi", "Digimon"],
-  "Cine y Televisión": ["Harry Potter", "Darth Vader", "Titanic", "Joker", "Avengers", "Game of Thrones", "Breaking Bad", "Stranger Things", "Mickey Mouse", "Batman", "Spiderman", "Shrek", "Toy Story", "Matrix", "Star Wars", "Jurassic Park", "Zombie"],
-  "Deportes": ["Fútbol", "Baloncesto", "Tenis", "Natación", "Boxeo", "Golf", "Voleibol", "Béisbol", "Estadio", "Pelota", "Gol", "Árbitro", "Medalla de Oro", "Gimnasio", "Correr", "Yoga", "Karate", "Messi", "Cristiano Ronaldo"],
-  "Famosos": ["Shakira", "Michael Jackson", "Elon Musk", "Messi", "Taylor Swift", "Bad Bunny", "Brad Pitt", "Marilyn Monroe", "Einstein", "Frida Kahlo", "Will Smith", "Beyoncé", "La Roca", "Tom Cruise", "Selena Gomez"],
-  "Mundo y Lugares": ["Torre Eiffel", "Estatua de la Libertad", "Gran Muralla China", "Pirámides de Egipto", "Coliseo Romano", "Machu Picchu", "Japón", "Brasil", "Nueva York", "París", "Aeropuerto", "Playa", "Museo", "Hospital", "Escuela"],
-  "Personajes": ["Mario Bros", "Sonic", "Superman", "Mujer Maravilla", "Sherlock Holmes", "Drácula", "Frankenstein", "Tarzán", "Papá Noel", "Hada de los Dientes", "Sirena", "Unicornio", "Fantasma", "Robot", "Alien"],
-  "Música": ["Guitarra", "Piano", "Batería", "Micrófono", "Concierto", "Audífonos", "Vinilo", "Spotify", "Rock", "Pop", "Reggaeton", "Salsa", "Violín", "Trompeta", "Cantante", "DJ", "Banda"],
-  "Ciencia y Tecnología": ["Inteligencia Artificial", "Robot", "Cohete", "Astronauta", "Microscopio", "ADN", "Internet", "Smartphone", "Wifi", "Dron", "Hacker", "Satélite", "Marte", "Gravedad", "Laboratorio", "Vacuna", "Chip"]
+  "Comida": [
+    "Pizza", "Hamburguesa", "Sushi", "Tacos", "Asado", "Empanadas", "Paella", "Helado", "Chocolate", 
+    "Ensalada", "Sopa", "Pollo frito", "Espagueti", "Panqueques", "Donas", "Churros", "Milanesa", 
+    "Ceviche", "Arepa", "Croissant", "Café", "Mate", "Vino", "Cerveza", "Torta", "Frutilla", "Banana", 
+    "Manzana", "Huevo frito", "Queso", "Jamón", "Arroz", "Papas fritas", "Burrito", "Ramen"
+  ],
+  "Historia": [
+    "Segunda Guerra Mundial", "Revolución Francesa", "Cristóbal Colón", "Imperio Romano", "Antiguo Egipto", 
+    "Vikingos", "Piratas", "Llegada a la Luna", "Muro de Berlín", "Titanic", "Dinosaurios", "Edad Media", 
+    "Samuráis", "Gladiadores", "Cleopatra", "Napoleón", "San Martín", "Simón Bolívar", "La Inquisición", 
+    "Peste Negra", "Revolución Industrial", "Guerra Fría", "Aztecas", "Mayas", "Incas", "Independencia", 
+    "Faraón", "Castillo Medieval", "Caballero", "La Pinta, la Niña y la Santa María", "Guillotina", "Mamut"
+  ],
+  "Vida Cotidiana": [
+    "Cepillo de dientes", "Sartén", "Almohada", "Llaves", "Reloj", "Espejo", "Cafetera", "Microondas", 
+    "Zapatos", "Paraguas", "Mochila", "Computadora", "Silla", "Cama", "Jabón", "Toalla", "Billetera", 
+    "Lentes", "Cuaderno", "Destornillador", "Control remoto", "Cargador", "Tarjeta de crédito", "Pasaporte", 
+    "DNI", "Anteojos de sol", "Sombrero", "Bufanda", "Guantes", "Medias", "Pantalón", "Camisa", "Vestido", 
+    "Plancha", "Lavarropas"
+  ],
+  "Anime": [
+    "Goku", "Naruto", "Pikachu", "Luffy", "Sailor Moon", "Totoro", "Eva 01", "Titan Colosal", "Death Note", 
+    "Dragon Ball", "One Piece", "Pokemon", "Espada", "Ninja", "Super Saiyajin", "Carta de Yugi", "Digimon",
+    "Eren Jaeger", "Mikasa", "Levi", "Saitama", "Seiya", "Oliver Atom", "Doraemon", "Shin Chan", "Light Yagami", 
+    "L", "Ryuk", "Tanjiro", "Nezuko", "Zenitsu", "Inosuke", "All Might", "Deku", "Vegeta", "Freezer"
+  ],
+  "Cine y Televisión": [
+    "Harry Potter", "Darth Vader", "Titanic", "Joker", "Avengers", "Game of Thrones", "Breaking Bad", 
+    "Stranger Things", "Mickey Mouse", "Batman", "Spiderman", "Shrek", "Toy Story", "Matrix", "Star Wars", 
+    "Jurassic Park", "Zombie", "El Padrino", "Pulp Fiction", "Volver al Futuro", "Indiana Jones", "Forrest Gump", 
+    "El Rey León", "Buscando a Nemo", "Los Increíbles", "Coco", "Frozen", "El Señor de los Anillos", 
+    "Piratas del Caribe", "Rápido y Furioso", "Misión Imposible", "Rocky", "Terminator", "Alien"
+  ],
+  "Deportes": [
+    "Fútbol", "Baloncesto", "Tenis", "Natación", "Boxeo", "Golf", "Voleibol", "Béisbol", "Estadio", "Pelota", 
+    "Gol", "Árbitro", "Medalla de Oro", "Gimnasio", "Correr", "Yoga", "Karate", "Messi", "Cristiano Ronaldo",
+    "Rugby", "Hockey", "Handball", "Atletismo", "Ciclismo", "Fórmula 1", "Moto GP", "Skate", "Surf", "Ski", 
+    "Snowboard", "Escalada", "Pesca", "Ajedrez", "Ping Pong", "Judo", "Taekwondo", "MMA"
+  ],
+  "Famosos": [
+    "Shakira", "Michael Jackson", "Elon Musk", "Messi", "Taylor Swift", "Bad Bunny", "Brad Pitt", 
+    "Marilyn Monroe", "Einstein", "Frida Kahlo", "Will Smith", "Beyoncé", "La Roca", "Tom Cruise", 
+    "Selena Gomez", "Ricky Martin", "Chayanne", "Luis Miguel", "Jennifer Lopez", "Lady Gaga", 
+    "Justin Bieber", "Ariana Grande", "Vin Diesel", "Leonardo DiCaprio", "Johnny Depp", "Robert Downey Jr", 
+    "Chris Hemsworth", "Scarlett Johansson", "Gal Gadot", "Maradona", "Pelé", "Neymar"
+  ],
+  "Mundo y Lugares": [
+    "Torre Eiffel", "Estatua de la Libertad", "Gran Muralla China", "Pirámides de Egipto", "Coliseo Romano", 
+    "Machu Picchu", "Japón", "Brasil", "Nueva York", "París", "Aeropuerto", "Playa", "Museo", "Hospital", 
+    "Escuela", "Gran Cañón", "Cataratas del Iguazú", "Amazonas", "Everest", "Antártida", "Polo Norte", 
+    "Sahara", "Caribe", "Disney", "Hollywood", "Las Vegas", "Londres", "Roma", "Venecia", "Grecia", 
+    "Atenas", "Moscú", "Dubai", "Tokio", "Sydney"
+  ],
+  "Personajes": [
+    "Mario Bros", "Sonic", "Superman", "Mujer Maravilla", "Sherlock Holmes", "Drácula", "Frankenstein", 
+    "Tarzán", "Papá Noel", "Hada de los Dientes", "Sirena", "Unicornio", "Fantasma", "Robot", "Alien",
+    "Bob Esponja", "Patricio Estrella", "Homero Simpson", "Bart Simpson", "Peter Griffin", "Scooby Doo", 
+    "Bugs Bunny", "Pato Lucas", "Correcaminos", "Coyote", "Tom y Jerry", "Pantera Rosa", "Garfield", 
+    "Snoopy", "Mafalda", "Popeye", "Mickey Mouse", "Minnie"
+  ],
+  "Música": [
+    "Guitarra", "Piano", "Batería", "Micrófono", "Concierto", "Audífonos", "Vinilo", "Spotify", "Rock", 
+    "Pop", "Reggaeton", "Salsa", "Violín", "Trompeta", "Cantante", "DJ", "Banda", "Tambor", "Flauta", 
+    "Saxofón", "Bajo", "Ukelele", "Acordeón", "Arpa", "Teclado", "Escenario", "Videoclip", "Playlist", 
+    "Álbum", "Canción", "Ritmo", "Melodía", "Nota musical", "Partitura", "Ópera", "Rap", "Jazz"
+  ],
+  "Ciencia y Tecnología": [
+    "Inteligencia Artificial", "Robot", "Cohete", "Astronauta", "Microscopio", "ADN", "Internet", 
+    "Smartphone", "Wifi", "Dron", "Hacker", "Satélite", "Marte", "Gravedad", "Laboratorio", "Vacuna", 
+    "Chip", "Telescopio", "Experimento", "Fórmula", "Átomo", "Molécula", "Célula", "Bacteria", "Virus", 
+    "Medicina", "Cirujano", "Ingeniero", "Programador", "Código", "Software", "Hardware", "Pantalla", 
+    "Teclado", "Mouse", "Impresora", "Realidad Virtual", "Holograma", "Cyborg"
+  ]
 };
 
 const CATEGORY_KEYS = Object.keys(WORD_CATEGORIES);
