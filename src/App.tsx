@@ -1,7 +1,8 @@
 import { useState, useEffect, useLayoutEffect } from 'react';
 import { 
   Users, UserX, Play, ArrowRight, RefreshCw, AlertCircle, Home, Zap,
-  Leaf, Coffee, Tv, Trophy, Sparkles, Globe, Ghost, Music, Cpu, Layers, Hand
+  Leaf, Coffee, Tv, Trophy, Sparkles, Globe, Ghost, Music, Cpu, Layers, Hand,
+  Plus, Trash2, Edit3, Check
 } from 'lucide-react';
 
 // --- PALETA DE COLORES PERSONALIZABLE ---
@@ -15,6 +16,7 @@ const THEME = {
   secondary: "bg-[#a3e635]", 
   secondaryText: "text-[#a3e635]",
   accentBorder: "border-[#a3e635]", 
+  danger: "bg-red-500",
 };
 
 // --- MAPA DE ICONOS POR CATEGORÍA ---
@@ -47,6 +49,12 @@ const WORD_CATEGORIES: Record<string, string[]> = {
 
 const CATEGORY_KEYS = Object.keys(WORD_CATEGORIES);
 
+// Tipo para el jugador
+type Player = {
+  id: number;
+  name: string;
+};
+
 export default function ElImpostorApp() {
   // --- AUTO-CONFIGURACIÓN ---
   useLayoutEffect(() => {
@@ -66,22 +74,70 @@ export default function ElImpostorApp() {
     }
   }, []);
 
-  // Estados
-  const [numPlayers, setNumPlayers] = useState<number>(4);
+  // --- ESTADOS ---
+  
+  // Lista de Jugadores (Ahora son objetos con nombre)
+  const [players, setPlayers] = useState<Player[]>([
+    { id: 1, name: "Jugador 1" },
+    { id: 2, name: "Jugador 2" },
+    { id: 3, name: "Jugador 3" }
+  ]);
+
   const [numImpostors, setNumImpostors] = useState<number>(1);
-  const [gameStage, setGameStage] = useState<'setup' | 'categories' | 'countdown' | 'passAndPlay' | 'discussion'>('setup'); 
+  const [gameStage, setGameStage] = useState<'setup' | 'managePlayers' | 'categories' | 'countdown' | 'passAndPlay' | 'discussion'>('setup'); 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   
   const [currentWord, setCurrentWord] = useState<string>('');
   const [playerRoles, setPlayerRoles] = useState<boolean[]>([]);
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState<number>(0);
-  
-  // Nuevo estado para la moneda
   const [isCoinFlipped, setIsCoinFlipped] = useState<boolean>(false);
-  
   const [countdown, setCountdown] = useState<number>(5);
 
-  // --- LÓGICA DE CONTEO REGRESIVO ---
+  // --- LÓGICA DE JUGADORES ---
+  
+  // Agregar jugador
+  const addPlayer = () => {
+    if (players.length < 10) {
+      const newId = players.length + 1;
+      setPlayers([...players, { id: newId, name: `Jugador ${newId}` }]);
+    }
+  };
+
+  // Eliminar jugador
+  const removePlayer = (indexToRemove: number) => {
+    if (players.length > 3) {
+      const newPlayers = players.filter((_, index) => index !== indexToRemove);
+      setPlayers(newPlayers);
+    }
+  };
+
+  // Editar nombre
+  const updatePlayerName = (index: number, newName: string) => {
+    const newPlayers = [...players];
+    newPlayers[index].name = newName;
+    setPlayers(newPlayers);
+  };
+
+  // Validar impostores al cambiar número de jugadores
+  const getMaxImpostors = (count: number): number => {
+    if (count <= 4) return 1;
+    if (count <= 6) return 2;
+    return 3; 
+  };
+
+  useEffect(() => {
+    const max = getMaxImpostors(players.length);
+    if (numImpostors > max) {
+      setNumImpostors(max);
+    }
+  }, [players.length]);
+
+  const incrementImpostors = () => { if (numImpostors < getMaxImpostors(players.length)) setNumImpostors(prev => prev + 1); };
+  const decrementImpostors = () => { if (numImpostors > 1) setNumImpostors(prev => prev - 1); };
+
+  // --- LÓGICA DE JUEGO ---
+
+  // Conteo regresivo
   useEffect(() => {
     let timer: any;
     if (gameStage === 'countdown') {
@@ -93,25 +149,6 @@ export default function ElImpostorApp() {
     }
     return () => clearTimeout(timer);
   }, [gameStage, countdown]);
-
-  // Validaciones
-  const getMaxImpostors = (players: number): number => {
-    if (players <= 4) return 1;
-    if (players <= 6) return 2;
-    return 3; 
-  };
-
-  useEffect(() => {
-    const max = getMaxImpostors(numPlayers);
-    if (numImpostors > max) {
-      setNumImpostors(max);
-    }
-  }, [numPlayers]);
-
-  const incrementPlayers = () => { if (numPlayers < 10) setNumPlayers(prev => prev + 1); };
-  const decrementPlayers = () => { if (numPlayers > 3) setNumPlayers(prev => prev - 1); };
-  const incrementImpostors = () => { if (numImpostors < getMaxImpostors(numPlayers)) setNumImpostors(prev => prev + 1); };
-  const decrementImpostors = () => { if (numImpostors > 1) setNumImpostors(prev => prev - 1); };
 
   const handleStartGame = () => setGameStage('categories');
 
@@ -132,10 +169,10 @@ export default function ElImpostorApp() {
   };
 
   const prepareRound = () => {
-    let roles: boolean[] = Array(numPlayers).fill(false);
+    let roles: boolean[] = Array(players.length).fill(false);
     let assignedImpostors = 0;
     while (assignedImpostors < numImpostors) {
-      const randomIndex = Math.floor(Math.random() * numPlayers);
+      const randomIndex = Math.floor(Math.random() * players.length);
       if (!roles[randomIndex]) {
         roles[randomIndex] = true;
         assignedImpostors++;
@@ -143,7 +180,7 @@ export default function ElImpostorApp() {
     }
     setPlayerRoles(roles);
     setCurrentPlayerIndex(0);
-    setIsCoinFlipped(false); // Asegurar que la moneda empieza cerrada
+    setIsCoinFlipped(false);
     setGameStage('passAndPlay');
   };
 
@@ -152,8 +189,8 @@ export default function ElImpostorApp() {
   };
   
   const handleNextPlayer = () => {
-    setIsCoinFlipped(false); // Resetear moneda para el siguiente
-    if (currentPlayerIndex < numPlayers - 1) {
+    setIsCoinFlipped(false);
+    if (currentPlayerIndex < players.length - 1) {
       setCurrentPlayerIndex(prev => prev + 1);
     } else {
       setGameStage('discussion');
@@ -187,7 +224,6 @@ export default function ElImpostorApp() {
       <style dangerouslySetInnerHTML={{__html: `
         body { margin: 0; background-color: #0f172a; color: white; font-family: sans-serif; }
         .app-container { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        /* Animaciones */
         @keyframes fade-in {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -200,7 +236,6 @@ export default function ElImpostorApp() {
             50% { transform: scale(1.1); opacity: 0.8; }
             100% { transform: scale(1); opacity: 1; }
         }
-        /* Clases para efecto 3D de la moneda */
         .perspective-1000 { perspective: 1000px; }
         .transform-style-3d { transform-style: preserve-3d; }
         .backface-hidden { backface-visibility: hidden; }
@@ -222,10 +257,13 @@ export default function ElImpostorApp() {
 
         <div className="z-10 w-full max-w-md p-5 flex flex-col h-full max-h-screen">
           
-          {/* HEADER (Oculto en contador y juego activo si no estamos en setup) */}
+          {/* HEADER */}
           {gameStage !== 'countdown' && gameStage !== 'passAndPlay' && (
             <header className={`flex justify-between items-center mb-6 ${THEME.card} p-4 rounded-2xl border border-slate-700 shadow-xl`}>
               <div className="flex items-center gap-3">
+                  {/* AQUÍ PUEDES PONER TU IMAGEN. Descomenta la siguiente linea y comenta el div del icono Zap */}
+                  {/* <img src="/tu-icono.png" alt="Logo" className="w-10 h-10 object-contain" /> */}
+                  
                   <div className={`${THEME.secondary} p-2 rounded-lg`}>
                       <Zap size={24} className="text-slate-900" strokeWidth={3} />
                   </div>
@@ -241,22 +279,40 @@ export default function ElImpostorApp() {
             </header>
           )}
 
-          {/* --- PANTALLA: CONFIGURACIÓN --- */}
+          {/* --- PANTALLA: MENÚ PRINCIPAL (SETUP) --- */}
           {gameStage === 'setup' && (
             <div className="flex-1 flex flex-col justify-center space-y-6 animate-fade-in">
-              <div className={`${THEME.card} p-6 rounded-3xl border border-slate-700 shadow-2xl relative overflow-hidden`}>
+              
+              {/* Tarjeta: BOTÓN PARA IR A GESTIONAR JUGADORES */}
+              <button 
+                onClick={() => setGameStage('managePlayers')}
+                className={`${THEME.card} p-6 rounded-3xl border border-slate-700 shadow-2xl relative overflow-hidden w-full group active:scale-[0.98] transition-all`}
+              >
                 <div className={`absolute top-0 left-0 w-2 h-full ${THEME.primary}`}></div>
-                <div className="flex items-center gap-3 mb-4">
-                  <Users size={28} className="text-white" />
-                  <span className="text-xl font-extrabold uppercase text-white">Jugadores</span>
+                
+                <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                        <Users size={28} className="text-white group-hover:text-purple-400 transition-colors" />
+                        <div className="text-left">
+                            <span className="text-xl font-extrabold uppercase text-white block">Jugadores</span>
+                            <span className="text-slate-400 text-sm font-semibold">{players.length} participantes</span>
+                        </div>
+                    </div>
+                    <div className={`${THEME.primary} p-3 rounded-xl text-white`}>
+                        <Edit3 size={24} />
+                    </div>
                 </div>
-                <div className="flex justify-between items-center bg-slate-900/50 rounded-2xl p-2 border border-slate-700">
-                  <button onClick={decrementPlayers} disabled={numPlayers <= 3} className={`w-12 h-12 flex items-center justify-center ${THEME.card} rounded-xl text-2xl font-bold text-white border border-slate-600 hover:${THEME.primary} hover:border-transparent transition disabled:opacity-30`}>-</button>
-                  <span className="text-5xl font-black text-white">{numPlayers}</span>
-                  <button onClick={incrementPlayers} disabled={numPlayers >= 10} className={`w-12 h-12 flex items-center justify-center ${THEME.card} rounded-xl text-2xl font-bold text-white border border-slate-600 hover:${THEME.primary} hover:border-transparent transition disabled:opacity-30`}>+</button>
+                <div className="mt-4 bg-slate-900/50 p-2 rounded-lg border border-slate-700 text-left">
+                    <p className="text-xs text-slate-400 truncate">
+                        {players.map(p => p.name).join(", ")}
+                    </p>
                 </div>
-              </div>
+                <p className="mt-3 text-center text-purple-400 font-bold text-sm uppercase tracking-wider flex items-center justify-center gap-1">
+                    Agregar / Editar nombres <ArrowRight size={16} />
+                </p>
+              </button>
 
+              {/* Tarjeta: SELECTOR DE CHAMUYEROS */}
               <div className={`${THEME.card} p-6 rounded-3xl border border-slate-700 shadow-2xl relative overflow-hidden`}>
                 <div className={`absolute top-0 left-0 w-2 h-full ${THEME.secondary}`}></div>
                 <div className="flex items-center gap-3 mb-4">
@@ -266,18 +322,71 @@ export default function ElImpostorApp() {
                 <div className="flex justify-between items-center bg-slate-900/50 rounded-2xl p-2 border border-slate-700">
                   <button onClick={decrementImpostors} disabled={numImpostors <= 1} className={`w-12 h-12 flex items-center justify-center ${THEME.card} rounded-xl text-2xl font-bold text-white border border-slate-600 hover:${THEME.secondary} hover:text-slate-900 hover:border-transparent transition disabled:opacity-30`}>-</button>
                   <span className="text-5xl font-black text-white">{numImpostors}</span>
-                  <button onClick={incrementImpostors} disabled={numImpostors >= getMaxImpostors(numPlayers)} className={`w-12 h-12 flex items-center justify-center ${THEME.card} rounded-xl text-2xl font-bold text-white border border-slate-600 hover:${THEME.secondary} hover:text-slate-900 hover:border-transparent transition disabled:opacity-30`}>+</button>
+                  <button onClick={incrementImpostors} disabled={numImpostors >= getMaxImpostors(players.length)} className={`w-12 h-12 flex items-center justify-center ${THEME.card} rounded-xl text-2xl font-bold text-white border border-slate-600 hover:${THEME.secondary} hover:text-slate-900 hover:border-transparent transition disabled:opacity-30`}>+</button>
                 </div>
                 <p className="text-xs font-bold text-center mt-3 text-slate-500 bg-slate-900/50 py-1 px-3 rounded-full inline-block mx-auto w-full border border-slate-800">
-                  Máx: {getMaxImpostors(numPlayers)} para esta cantidad
+                  Máx: {getMaxImpostors(players.length)} para {players.length} jugadores
                 </p>
               </div>
 
               <div className="flex-1"></div>
 
               <button onClick={handleStartGame} className={`w-full py-4 ${THEME.primary} ${THEME.primaryHover} rounded-2xl text-2xl font-black text-white shadow-lg shadow-purple-900/50 hover:translate-y-[-2px] transition-all flex items-center justify-center gap-3 uppercase tracking-wide`}>
-                ¡A Jugar! <Play size={28} fill="white" />
+                Comenzar Partida <Play size={28} fill="white" />
               </button>
+            </div>
+          )}
+
+          {/* --- PANTALLA: GESTIONAR JUGADORES --- */}
+          {gameStage === 'managePlayers' && (
+            <div className="flex-1 flex flex-col space-y-4 animate-fade-in overflow-hidden">
+                <div className="text-center mb-2">
+                    <h2 className="text-xl font-black text-white uppercase">Lista de Jugadores</h2>
+                    <p className="text-slate-400 text-sm">Edita los nombres o agrega más</p>
+                </div>
+
+                <div className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-hide">
+                    {players.map((player, index) => (
+                        <div key={player.id} className="flex items-center gap-2 animate-fade-in">
+                            <div className="flex-1 relative">
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                                    <Users size={16} />
+                                </div>
+                                <input 
+                                    type="text" 
+                                    value={player.name}
+                                    onChange={(e) => updatePlayerName(index, e.target.value)}
+                                    maxLength={15}
+                                    className={`w-full bg-slate-800 text-white font-bold py-3 pl-10 pr-4 rounded-xl border border-slate-600 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 transition-all`}
+                                />
+                            </div>
+                            <button 
+                                onClick={() => removePlayer(index)}
+                                disabled={players.length <= 3}
+                                className={`p-3 rounded-xl border border-slate-600 transition-colors ${players.length <= 3 ? 'opacity-30 cursor-not-allowed bg-slate-800' : 'bg-slate-800 hover:bg-red-500/20 hover:border-red-500 hover:text-red-500'}`}
+                            >
+                                <Trash2 size={20} />
+                            </button>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="pt-4 space-y-3 bg-[#0f172a]"> {/* Fondo para que no se vea transparente sobre la lista */}
+                    <button 
+                        onClick={addPlayer}
+                        disabled={players.length >= 10}
+                        className={`w-full py-3 rounded-xl border-2 border-dashed border-slate-600 text-slate-400 font-bold uppercase tracking-wide flex items-center justify-center gap-2 hover:border-purple-500 hover:text-purple-400 transition-all ${players.length >= 10 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                        <Plus size={20} /> Agregar Jugador ({players.length}/10)
+                    </button>
+
+                    <button 
+                        onClick={() => setGameStage('setup')}
+                        className={`w-full py-4 ${THEME.secondary} hover:brightness-110 rounded-2xl text-slate-900 text-xl font-black uppercase tracking-wide shadow-xl flex items-center justify-center gap-2`}
+                    >
+                        <Check size={24} strokeWidth={3} /> Finalizado
+                    </button>
+                </div>
             </div>
           )}
 
@@ -340,14 +449,15 @@ export default function ElImpostorApp() {
           {gameStage === 'passAndPlay' && (
             <div className="flex-1 flex flex-col items-center justify-between py-6 animate-fade-in w-full">
               
-              {/* Header de Turno */}
+              {/* Header de Turno (AHORA CON NOMBRE REAL) */}
               <div className="text-center space-y-2">
                   <div className={`inline-flex items-center gap-2 px-4 py-1 rounded-full border border-slate-600 ${THEME.card}`}>
                     <Users size={16} className="text-slate-400" />
                     <span className="text-sm font-bold text-slate-300 uppercase">Turno Actual</span>
                   </div>
-                  <h2 className="text-5xl font-black text-white tracking-tight drop-shadow-lg">
-                    Jugador {currentPlayerIndex + 1}
+                  {/* AQUÍ MOSTRAMOS EL NOMBRE DEL JUGADOR ACTUAL */}
+                  <h2 className="text-5xl font-black text-white tracking-tight drop-shadow-lg break-words px-2 leading-none">
+                    {players[currentPlayerIndex].name}
                   </h2>
                   <p className="text-slate-400 text-sm font-semibold max-w-xs mx-auto">
                     Asegúrate de que nadie más mire la pantalla
@@ -410,7 +520,7 @@ export default function ElImpostorApp() {
                     onClick={handleNextPlayer}
                     className={`w-full py-4 ${THEME.secondary} hover:brightness-110 active:scale-[0.98] rounded-2xl text-slate-900 text-xl font-black uppercase tracking-wide shadow-xl transition-all flex items-center justify-center gap-2`}
                   >
-                    {currentPlayerIndex < numPlayers - 1 ? 'Listo, Siguiente' : 'Listo, ¡A Jugar!'} 
+                    {currentPlayerIndex < players.length - 1 ? 'Listo, Siguiente' : 'Listo, ¡A Jugar!'} 
                     <ArrowRight size={24} strokeWidth={3} />
                   </button>
               </div>
