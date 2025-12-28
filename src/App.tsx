@@ -2,7 +2,7 @@ import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { 
   Users, UserX, Play, ArrowRight, RefreshCw, AlertCircle, Home, Zap,
   Leaf, Coffee, Tv, Trophy, Sparkles, Globe, Ghost, Music, Cpu, Layers, Hand,
-  Plus, Trash2, Edit3, Check, Camera, X
+  Plus, Trash2, Edit3, Check, Camera, X, Search
 } from 'lucide-react';
 
 // --- PALETA DE COLORES PERSONALIZABLE ---
@@ -132,6 +132,11 @@ export default function ElImpostorApp() {
       if (context) {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
+        
+        // Espejo horizontal para que se sienta como un espejo
+        context.translate(canvas.width, 0);
+        context.scale(-1, 1);
+        
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         const photoUrl = canvas.toDataURL('image/png');
         
@@ -283,6 +288,15 @@ export default function ElImpostorApp() {
         .transform-style-3d { transform-style: preserve-3d; }
         .backface-hidden { backface-visibility: hidden; }
         .rotate-y-180 { transform: rotateY(180deg); }
+        
+        /* FILTRO ESTILO SHERLOCK HOLMES / VINTAGE */
+        .sherlock-filter {
+            filter: sepia(0.8) contrast(1.2) brightness(0.9) grayscale(0.2);
+        }
+        .vintage-overlay {
+            background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.8) 100%);
+            mix-blend-mode: multiply;
+        }
       `}} />
 
       <div 
@@ -319,7 +333,7 @@ export default function ElImpostorApp() {
             </header>
           )}
 
-          {/* --- MODAL DE CÁMARA (OVERLAY) --- */}
+          {/* --- MODAL DE CÁMARA --- */}
           {isCameraOpen && (
             <div className="absolute inset-0 z-[100] bg-black flex flex-col items-center justify-center p-4">
               <div className="w-full max-w-sm bg-slate-900 rounded-3xl border border-slate-700 overflow-hidden shadow-2xl">
@@ -329,10 +343,11 @@ export default function ElImpostorApp() {
                        <X size={24} />
                     </button>
                  </div>
-                 <div className="relative aspect-square bg-black">
-                    <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover transform scale-x-[-1]" />
-                    {/* Guía circular para la cara */}
-                    <div className="absolute inset-0 border-[40px] border-black/50 rounded-full"></div>
+                 <div className="relative aspect-square bg-black overflow-hidden">
+                    {/* Filtro Sherlock en tiempo real para previsualizar */}
+                    <div className="absolute inset-0 pointer-events-none z-20 vintage-overlay opacity-50"></div>
+                    <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover transform scale-x-[-1] sherlock-filter" />
+                    <div className="absolute inset-0 border-[40px] border-black/50 rounded-full z-10"></div>
                  </div>
                  <div className="p-6 flex justify-center bg-slate-900">
                     <button 
@@ -347,24 +362,21 @@ export default function ElImpostorApp() {
             </div>
           )}
 
-          {/* --- PANTALLA: MENÚ PRINCIPAL (SETUP) --- */}
+          {/* --- MENÚ PRINCIPAL --- */}
           {gameStage === 'setup' && (
             <div className="flex-1 flex flex-col justify-center space-y-6 animate-fade-in">
-              
-              {/* Tarjeta: BOTÓN PARA IR A GESTIONAR JUGADORES */}
               <button 
                 onClick={() => setGameStage('managePlayers')}
                 className={`${THEME.card} p-6 rounded-3xl border border-slate-700 shadow-2xl relative overflow-hidden w-full group active:scale-[0.98] transition-all`}
               >
                 <div className={`absolute top-0 left-0 w-2 h-full ${THEME.primary}`}></div>
-                
                 <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
                         <div className="flex -space-x-3">
                            {players.slice(0, 3).map(p => (
                              <div key={p.id} className="w-10 h-10 rounded-full border-2 border-slate-800 bg-slate-700 overflow-hidden">
                                 {p.photo ? (
-                                  <img src={p.photo} alt={p.name} className="w-full h-full object-cover" />
+                                  <img src={p.photo} alt={p.name} className="w-full h-full object-cover sherlock-filter" />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center text-slate-500"><Users size={16} /></div>
                                 )}
@@ -374,7 +386,6 @@ export default function ElImpostorApp() {
                              <div className="w-10 h-10 rounded-full border-2 border-slate-800 bg-slate-800 flex items-center justify-center text-xs font-bold text-white">+{players.length - 3}</div>
                            )}
                         </div>
-
                         <div className="text-left">
                             <span className="text-xl font-extrabold uppercase text-white block">Jugadores</span>
                             <span className="text-slate-400 text-sm font-semibold">{players.length} participantes</span>
@@ -394,7 +405,6 @@ export default function ElImpostorApp() {
                 </p>
               </button>
 
-              {/* Tarjeta: SELECTOR DE CHAMUYEROS */}
               <div className={`${THEME.card} p-6 rounded-3xl border border-slate-700 shadow-2xl relative overflow-hidden`}>
                 <div className={`absolute top-0 left-0 w-2 h-full ${THEME.secondary}`}></div>
                 <div className="flex items-center gap-3 mb-4">
@@ -419,7 +429,7 @@ export default function ElImpostorApp() {
             </div>
           )}
 
-          {/* --- PANTALLA: GESTIONAR JUGADORES --- */}
+          {/* --- GESTIONAR JUGADORES --- */}
           {gameStage === 'managePlayers' && (
             <div className="flex-1 flex flex-col space-y-4 animate-fade-in overflow-hidden">
                 <div className="text-center mb-2">
@@ -437,7 +447,8 @@ export default function ElImpostorApp() {
                                 >
                                    {player.photo ? (
                                      <>
-                                       <img src={player.photo} alt={player.name} className="w-full h-full object-cover" />
+                                       {/* Aplicamos filtro Sherlock también en la miniatura */}
+                                       <img src={player.photo} alt={player.name} className="w-full h-full object-cover sherlock-filter" />
                                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                           <Camera size={20} className="text-white" />
                                        </div>
@@ -486,7 +497,7 @@ export default function ElImpostorApp() {
             </div>
           )}
 
-          {/* --- PANTALLA: CATEGORÍAS --- */}
+          {/* --- CATEGORÍAS --- */}
           {gameStage === 'categories' && (
             <div className="flex-1 overflow-y-auto animate-fade-in pb-4">
               <div className="p-2 mb-4">
@@ -517,7 +528,7 @@ export default function ElImpostorApp() {
             </div>
           )}
 
-          {/* --- PANTALLA: CUENTA REGRESIVA --- */}
+          {/* --- CUENTA REGRESIVA --- */}
           {gameStage === 'countdown' && (
             <div className="flex-1 flex flex-col items-center justify-center animate-fade-in text-center relative">
                <div className={`absolute w-80 h-80 ${THEME.primary} opacity-20 rounded-full blur-3xl animate-pulse`}></div>
@@ -541,11 +552,10 @@ export default function ElImpostorApp() {
             </div>
           )}
 
-          {/* --- PANTALLA: MONEDA GIRATORIA (PASS & PLAY) --- */}
+          {/* --- MONEDA GIRATORIA (PASS & PLAY) --- */}
           {gameStage === 'passAndPlay' && (
             <div className="flex-1 flex flex-col items-center w-full h-full relative">
               
-              {/* Header de Turno */}
               <div className="mt-8 text-center space-y-2 flex-shrink-0">
                   <div className={`inline-flex items-center gap-2 px-4 py-1 rounded-full border border-slate-600 ${THEME.card}`}>
                     <Users size={16} className="text-slate-400" />
@@ -559,23 +569,38 @@ export default function ElImpostorApp() {
                   </p>
               </div>
 
-              {/* CONTENEDOR CENTRAL: MONEDA Y TEXTO */}
               <div className="flex-1 flex flex-col items-center justify-center w-full">
-                  {/* MONEDA */}
                   <div className="perspective-1000 w-72 h-72 cursor-pointer group mb-6" onClick={handleFlipCoin}>
                       <div className={`relative w-full h-full duration-700 transform-style-3d transition-transform ${isCoinFlipped ? 'rotate-y-180' : ''}`}>
                         
-                        {/* CARA FRONTAL (INCÓGNITA CON FOTO) */}
-                        <div className={`absolute w-full h-full backface-hidden rounded-full border-8 border-slate-800 shadow-[0_0_50px_rgba(0,0,0,0.5)] flex items-center justify-center bg-gradient-to-br from-yellow-400 to-yellow-600 overflow-hidden`}>
+                        {/* CARA FRONTAL (INCÓGNITA CON FOTO ESTILO SHERLOCK) */}
+                        <div className={`absolute w-full h-full backface-hidden rounded-full border-8 border-slate-800 shadow-[0_0_50px_rgba(0,0,0,0.5)] flex items-center justify-center bg-yellow-900 overflow-hidden`}>
                             {players[currentPlayerIndex].photo ? (
-                              <img src={players[currentPlayerIndex].photo} alt="Player" className="w-full h-full object-cover" />
+                              <div className="relative w-full h-full">
+                                  {/* Capa de mezcla color sepia/marrón */}
+                                  <div className="absolute inset-0 bg-[#704214] mix-blend-color z-10 opacity-60 pointer-events-none"></div>
+                                  {/* Viñeta oscura */}
+                                  <div className="absolute inset-0 vintage-overlay z-20 pointer-events-none"></div>
+                                  
+                                  {/* Imagen con filtros CSS */}
+                                  <img 
+                                    src={players[currentPlayerIndex].photo} 
+                                    alt="Player" 
+                                    className="w-full h-full object-cover sherlock-filter" 
+                                  />
+                                  
+                                  {/* Icono de Lupa decorativo superpuesto */}
+                                  <div className="absolute bottom-4 right-4 z-30 opacity-80 drop-shadow-lg">
+                                      <Search size={48} className="text-white/80" strokeWidth={3} />
+                                  </div>
+                              </div>
                             ) : (
-                              <div className="flex items-center justify-center">
-                                 <Hand size={80} className="text-yellow-900/50 animate-pulse" />
+                              <div className="flex items-center justify-center w-full h-full bg-slate-800">
+                                 <Hand size={80} className="text-slate-700 animate-pulse" />
                               </div>
                             )}
-                            {/* Brillo */}
-                            <div className="absolute top-0 left-0 w-full h-full rounded-full bg-white opacity-10 pointer-events-none"></div>
+                            {/* Brillo en el vidrio de la moneda */}
+                            <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/10 to-transparent pointer-events-none z-40"></div>
                         </div>
 
                         {/* CARA TRASERA (INFORMACIÓN) */}
@@ -607,7 +632,6 @@ export default function ElImpostorApp() {
                       </div>
                   </div>
 
-                  {/* TEXTO DEBAJO DE LA MONEDA */}
                   <div className="animate-pulse">
                       <p className="text-slate-400 font-bold uppercase tracking-widest text-sm flex items-center gap-2 bg-slate-800/50 px-4 py-2 rounded-full border border-slate-700">
                           {isCoinFlipped ? (
@@ -619,7 +643,6 @@ export default function ElImpostorApp() {
                   </div>
               </div>
 
-              {/* BOTÓN LISTO - Parte Inferior */}
               <div className="w-full px-4 pb-8 mt-auto">
                   <button 
                     onClick={handleNextPlayer}
@@ -633,7 +656,7 @@ export default function ElImpostorApp() {
             </div>
           )}
 
-          {/* --- PANTALLA: DISCUSIÓN / VOTACIÓN --- */}
+          {/* --- DISCUSIÓN --- */}
           {gameStage === 'discussion' && (
             <div className="flex-1 flex flex-col items-center justify-center space-y-6 animate-fade-in text-center p-2">
                 <div className={`${THEME.card} p-8 rounded-[2.5rem] border border-slate-700 shadow-2xl w-full relative overflow-hidden`}>
