@@ -1,7 +1,7 @@
 import { useState, useEffect, useLayoutEffect } from 'react';
 import { 
   Users, UserX, Play, ArrowRight, RefreshCw, ChevronUp, AlertCircle, Home, Zap, Smile,
-  Leaf, Coffee, Tv, Trophy, Sparkles, Globe, Ghost, Music, Cpu, Layers
+  Leaf, Coffee, Tv, Trophy, Sparkles, Globe, Ghost, Music, Cpu, Layers, Hand
 } from 'lucide-react';
 
 // --- PALETA DE COLORES PERSONALIZABLE ---
@@ -69,14 +69,16 @@ export default function ElImpostorApp() {
   // Estados
   const [numPlayers, setNumPlayers] = useState<number>(4);
   const [numImpostors, setNumImpostors] = useState<number>(1);
-  // Añadimos 'countdown' a los stages posibles
   const [gameStage, setGameStage] = useState<'setup' | 'categories' | 'countdown' | 'passAndPlay' | 'discussion'>('setup'); 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   
   const [currentWord, setCurrentWord] = useState<string>('');
   const [playerRoles, setPlayerRoles] = useState<boolean[]>([]);
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState<number>(0);
-  const [isRevealed, setIsRevealed] = useState<boolean>(false);
+  
+  // Nuevo estado para la moneda
+  const [isCoinFlipped, setIsCoinFlipped] = useState<boolean>(false);
+  
   const [countdown, setCountdown] = useState<number>(5);
 
   // --- LÓGICA DE CONTEO REGRESIVO ---
@@ -86,7 +88,6 @@ export default function ElImpostorApp() {
       if (countdown > 0) {
         timer = setTimeout(() => setCountdown(prev => prev - 1), 1000);
       } else {
-        // Cuando llega a 0, iniciamos la ronda
         prepareRound();
       }
     }
@@ -116,18 +117,15 @@ export default function ElImpostorApp() {
 
   const selectCategory = (category: string) => {
     let wordList: string[];
-    
     if (category === "Todas las anteriores") {
        wordList = Object.values(WORD_CATEGORIES).flat();
     } else {
        wordList = WORD_CATEGORIES[category] || [];
     }
-
     if (wordList.length > 0) {
         const randomWord = wordList[Math.floor(Math.random() * wordList.length)];
         setCurrentWord(randomWord);
         setSelectedCategory(category);
-        // En lugar de preparar ronda, vamos al contador
         setCountdown(5);
         setGameStage('countdown');
     }
@@ -145,14 +143,16 @@ export default function ElImpostorApp() {
     }
     setPlayerRoles(roles);
     setCurrentPlayerIndex(0);
-    setIsRevealed(false);
+    setIsCoinFlipped(false); // Asegurar que la moneda empieza cerrada
     setGameStage('passAndPlay');
   };
 
-  const handleReveal = () => setIsRevealed(true);
+  const handleFlipCoin = () => {
+    setIsCoinFlipped(!isCoinFlipped);
+  };
   
   const handleNextPlayer = () => {
-    setIsRevealed(false);
+    setIsCoinFlipped(false); // Resetear moneda para el siguiente
     if (currentPlayerIndex < numPlayers - 1) {
       setCurrentPlayerIndex(prev => prev + 1);
     } else {
@@ -162,7 +162,6 @@ export default function ElImpostorApp() {
 
   const startNewRound = () => {
     if (selectedCategory) {
-        // Obtenemos nueva palabra
         let wordList: string[];
         if (selectedCategory === "Todas las anteriores") {
            wordList = Object.values(WORD_CATEGORIES).flat();
@@ -171,7 +170,6 @@ export default function ElImpostorApp() {
         }
         const randomWord = wordList[Math.floor(Math.random() * wordList.length)];
         setCurrentWord(randomWord);
-        // Vamos directo al contador otra vez para mantener la emoción
         setCountdown(5);
         setGameStage('countdown');
     }
@@ -189,25 +187,43 @@ export default function ElImpostorApp() {
       <style dangerouslySetInnerHTML={{__html: `
         body { margin: 0; background-color: #0f172a; color: white; font-family: sans-serif; }
         .app-container { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        /* Animaciones */
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fade-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        .animation-delay-2000 { animation-delay: 2s; }
+        .countdown-anim { animation: pulse-scale 1s infinite; }
+        @keyframes pulse-scale {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        /* Clases para efecto 3D de la moneda */
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
       `}} />
 
       <div 
         className={`app-container min-h-screen ${THEME.bg} font-sans overflow-hidden flex flex-col items-center justify-center relative text-white`}
         style={{ fontFamily: "'Nunito', sans-serif" }}
       >
-        {/* Fondo Patrón Oscuro */}
+        {/* Fondo Patrón */}
         <div className="absolute inset-0 opacity-5 pointer-events-none" 
             style={{ backgroundImage: 'linear-gradient(45deg, #ffffff 1px, transparent 1px)', backgroundSize: '30px 30px' }}>
         </div>
 
-        {/* Decoraciones de Luz de Neón */}
+        {/* Decoraciones Neon */}
         <div className={`absolute top-[-50px] left-[-50px] w-64 h-64 ${THEME.primary} rounded-full mix-blend-screen filter blur-[100px] opacity-20 animate-pulse`}></div>
         <div className={`absolute bottom-[-50px] right-[-50px] w-64 h-64 ${THEME.secondary} rounded-full mix-blend-screen filter blur-[100px] opacity-20 animate-pulse animation-delay-2000`}></div>
 
         <div className="z-10 w-full max-w-md p-5 flex flex-col h-full max-h-screen">
           
-          {/* HEADER (Oculto en contador y juego activo) */}
-          {gameStage !== 'passAndPlay' && gameStage !== 'countdown' && (
+          {/* HEADER (Oculto en contador y juego activo si no estamos en setup) */}
+          {gameStage !== 'countdown' && gameStage !== 'passAndPlay' && (
             <header className={`flex justify-between items-center mb-6 ${THEME.card} p-4 rounded-2xl border border-slate-700 shadow-xl`}>
               <div className="flex items-center gap-3">
                   <div className={`${THEME.secondary} p-2 rounded-lg`}>
@@ -228,8 +244,6 @@ export default function ElImpostorApp() {
           {/* --- PANTALLA: CONFIGURACIÓN --- */}
           {gameStage === 'setup' && (
             <div className="flex-1 flex flex-col justify-center space-y-6 animate-fade-in">
-              
-              {/* Tarjeta Jugadores */}
               <div className={`${THEME.card} p-6 rounded-3xl border border-slate-700 shadow-2xl relative overflow-hidden`}>
                 <div className={`absolute top-0 left-0 w-2 h-full ${THEME.primary}`}></div>
                 <div className="flex items-center gap-3 mb-4">
@@ -243,7 +257,6 @@ export default function ElImpostorApp() {
                 </div>
               </div>
 
-              {/* Tarjeta Chamuyeros */}
               <div className={`${THEME.card} p-6 rounded-3xl border border-slate-700 shadow-2xl relative overflow-hidden`}>
                 <div className={`absolute top-0 left-0 w-2 h-full ${THEME.secondary}`}></div>
                 <div className="flex items-center gap-3 mb-4">
@@ -262,53 +275,36 @@ export default function ElImpostorApp() {
 
               <div className="flex-1"></div>
 
-              <button 
-                onClick={handleStartGame}
-                className={`w-full py-4 ${THEME.primary} ${THEME.primaryHover} rounded-2xl text-2xl font-black text-white shadow-lg shadow-purple-900/50 hover:translate-y-[-2px] transition-all flex items-center justify-center gap-3 uppercase tracking-wide`}
-              >
+              <button onClick={handleStartGame} className={`w-full py-4 ${THEME.primary} ${THEME.primaryHover} rounded-2xl text-2xl font-black text-white shadow-lg shadow-purple-900/50 hover:translate-y-[-2px] transition-all flex items-center justify-center gap-3 uppercase tracking-wide`}>
                 ¡A Jugar! <Play size={28} fill="white" />
               </button>
             </div>
           )}
 
-          {/* --- PANTALLA: CATEGORÍAS (MODIFICADA: 1 COLUMNA, LETRA GRANDE) --- */}
+          {/* --- PANTALLA: CATEGORÍAS --- */}
           {gameStage === 'categories' && (
             <div className="flex-1 overflow-y-auto animate-fade-in pb-4">
               <div className="p-2 mb-4">
                   <p className="text-slate-400 font-bold text-center text-sm uppercase tracking-widest">Selecciona una categoría</p>
               </div>
-              
               <div className="flex flex-col gap-3">
                   {CATEGORY_KEYS.map((cat, idx) => (
-                    <button
-                      key={cat}
-                      onClick={() => selectCategory(cat)}
-                      className={`${THEME.card} p-5 rounded-3xl border border-slate-700 hover:border-purple-500 hover:bg-slate-700 transition-all flex items-center gap-6 group shadow-lg relative overflow-hidden active:scale-[0.98]`}
-                    >
-                      {/* Fondo de color sutil */}
+                    <button key={cat} onClick={() => selectCategory(cat)} className={`${THEME.card} p-5 rounded-3xl border border-slate-700 hover:border-purple-500 hover:bg-slate-700 transition-all flex items-center gap-6 group shadow-lg relative overflow-hidden active:scale-[0.98]`}>
                       <div className={`absolute left-0 top-0 bottom-0 w-2 ${idx % 2 === 0 ? THEME.primary : THEME.secondary}`}></div>
-                      
-                      {/* Icono con fondo */}
                       <div className={`p-4 rounded-2xl bg-slate-800 border border-slate-600 group-hover:bg-slate-900 transition-colors ${idx % 2 === 0 ? 'text-purple-400' : 'text-lime-400'}`}>
                          {CATEGORY_ICONS[cat]}
                       </div>
-
                       <div className="flex-1 text-left">
                          <span className="font-black text-white text-xl md:text-2xl leading-tight block group-hover:text-purple-300 transition-colors">
                             {cat}
                          </span>
                       </div>
-
                       <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                          <Play size={24} className="text-slate-400" />
                       </div>
                     </button>
                   ))}
-                  
-                  <button
-                      onClick={() => selectCategory("Todas las anteriores")}
-                      className={`mt-4 p-6 ${THEME.secondary} rounded-3xl text-slate-900 font-black hover:brightness-110 transition-all text-center flex items-center justify-center gap-4 uppercase tracking-wider text-xl shadow-xl active:scale-[0.98]`}
-                    >
+                  <button onClick={() => selectCategory("Todas las anteriores")} className={`mt-4 p-6 ${THEME.secondary} rounded-3xl text-slate-900 font-black hover:brightness-110 transition-all text-center flex items-center justify-center gap-4 uppercase tracking-wider text-xl shadow-xl active:scale-[0.98]`}>
                       <Layers size={32} />
                       Mezclar Todo
                   </button>
@@ -316,23 +312,19 @@ export default function ElImpostorApp() {
             </div>
           )}
 
-          {/* --- PANTALLA: CUENTA REGRESIVA (NUEVA) --- */}
+          {/* --- PANTALLA: CUENTA REGRESIVA --- */}
           {gameStage === 'countdown' && (
             <div className="flex-1 flex flex-col items-center justify-center animate-fade-in text-center relative">
-               {/* Decoración pulsante detrás del número */}
                <div className={`absolute w-80 h-80 ${THEME.primary} opacity-20 rounded-full blur-3xl animate-pulse`}></div>
-               
                <div className="relative z-10 space-y-8">
                   <div className="bg-slate-800/80 backdrop-blur-md px-6 py-2 rounded-full border border-slate-600 inline-block">
                      <p className="text-slate-400 uppercase tracking-widest font-bold text-sm">Preparando partida</p>
                   </div>
-
                   <div className="scale-150">
                      <span className={`text-[10rem] leading-none font-black ${THEME.secondaryText} drop-shadow-[0_0_15px_rgba(163,230,53,0.5)] countdown-anim`}>
                         {countdown}
                      </span>
                   </div>
-
                   <div className="space-y-2">
                      <p className="text-white text-2xl font-bold">¡Atentos!</p>
                      <p className="text-slate-400">Categoría elegida:</p>
@@ -344,87 +336,83 @@ export default function ElImpostorApp() {
             </div>
           )}
 
-          {/* --- PANTALLA: CORTINA (PASS & PLAY) --- */}
+          {/* --- PANTALLA: MONEDA GIRATORIA (PASS & PLAY) --- */}
           {gameStage === 'passAndPlay' && (
-            <div className={`absolute inset-0 z-50 ${THEME.bg} flex flex-col`}>
+            <div className="flex-1 flex flex-col items-center justify-between py-6 animate-fade-in w-full">
               
-              {/* FONDO (LO QUE SE VE AL LEVANTAR) */}
-              <div className={`flex-1 flex flex-col items-center justify-center p-6 text-center space-y-6 bg-slate-800 m-4 rounded-[3rem] border border-slate-700 shadow-2xl relative overflow-hidden`}>
-                <div className={`absolute top-0 w-full h-full opacity-10 ${playerRoles[currentPlayerIndex] ? 'bg-red-600' : 'bg-green-600'} blur-3xl`}></div>
-
-                <div className="relative z-10">
-                  {playerRoles[currentPlayerIndex] ? (
-                      // Vista del Chamuyero
-                      <div className="space-y-6 flex flex-col items-center animate-fade-in">
-                      <div className="w-40 h-40 bg-red-600/20 rounded-full flex items-center justify-center border-4 border-red-500 shadow-[0_0_50px_rgba(220,38,38,0.4)] animate-pulse">
-                          <UserX size={80} className="text-red-500" />
-                      </div>
-                      <div>
-                          <h2 className="text-4xl font-black text-red-500 uppercase tracking-tighter">Eres el Chamuyero</h2>
-                      </div>
-                      <div className="bg-red-900/30 p-4 rounded-xl border border-red-800/50">
-                          <p className="text-red-200 font-semibold text-lg">
-                          🤫 ¡Shhh! Inventa algo. <br/> Engaña a todos.
-                          </p>
-                      </div>
-                      </div>
-                  ) : (
-                      // Vista del Inocente
-                      <div className="space-y-6 w-full animate-fade-in">
-                      <div className={`w-32 h-32 mx-auto ${THEME.primary} bg-opacity-20 rounded-full flex items-center justify-center border-4 border-purple-500 shadow-[0_0_50px_rgba(139,92,246,0.3)]`}>
-                          <Smile size={64} className="text-purple-400" />
-                      </div>
-                      <div>
-                          <h2 className="text-xl font-bold text-slate-400 uppercase tracking-widest">La palabra es</h2>
-                          <div className={`mt-4 text-4xl font-black text-slate-900 ${THEME.secondary} px-6 py-6 rounded-2xl shadow-lg transform -rotate-1`}>
-                              {currentWord}
-                          </div>
-                      </div>
-                      <div className="inline-block bg-slate-900/50 border border-slate-700 px-4 py-1 rounded-full font-bold text-sm text-slate-400">
-                          {selectedCategory}
-                      </div>
-                      </div>
-                  )}
-                </div>
+              {/* Header de Turno */}
+              <div className="text-center space-y-2">
+                  <div className={`inline-flex items-center gap-2 px-4 py-1 rounded-full border border-slate-600 ${THEME.card}`}>
+                    <Users size={16} className="text-slate-400" />
+                    <span className="text-sm font-bold text-slate-300 uppercase">Turno Actual</span>
+                  </div>
+                  <h2 className="text-5xl font-black text-white tracking-tight drop-shadow-lg">
+                    Jugador {currentPlayerIndex + 1}
+                  </h2>
+                  <p className="text-slate-400 text-sm font-semibold max-w-xs mx-auto">
+                    Asegúrate de que nadie más mire la pantalla
+                  </p>
               </div>
 
-              {/* BOTÓN SIGUIENTE */}
-              <div className={`p-6 pt-0 ${THEME.bg} z-0`}>
-                <button 
+              {/* CONTENEDOR DE LA MONEDA */}
+              <div className="perspective-1000 w-72 h-72 cursor-pointer group" onClick={handleFlipCoin}>
+                  <div className={`relative w-full h-full duration-700 transform-style-3d transition-transform ${isCoinFlipped ? 'rotate-y-180' : ''}`}>
+                    
+                    {/* CARA FRONTAL (INCÓGNITA) */}
+                    <div className={`absolute w-full h-full backface-hidden rounded-full border-8 border-slate-800 shadow-[0_0_50px_rgba(0,0,0,0.5)] flex items-center justify-center bg-gradient-to-br from-yellow-400 to-yellow-600`}>
+                        <div className="text-center p-6 border-4 border-yellow-300/50 rounded-full w-56 h-56 flex flex-col items-center justify-center">
+                           <Hand size={48} className="text-yellow-900 mb-2 animate-bounce" />
+                           <p className="text-yellow-900 font-black text-2xl uppercase leading-none">Toca para<br/>Girar</p>
+                        </div>
+                        {/* Brillo */}
+                        <div className="absolute top-0 left-0 w-full h-full rounded-full bg-white opacity-10 pointer-events-none"></div>
+                    </div>
+
+                    {/* CARA TRASERA (INFORMACIÓN) */}
+                    <div className={`absolute w-full h-full backface-hidden rotate-y-180 rounded-full border-8 border-slate-900 shadow-[0_0_60px_rgba(139,92,246,0.5)] flex items-center justify-center overflow-hidden
+                        ${playerRoles[currentPlayerIndex] ? 'bg-gradient-to-br from-red-600 to-red-900' : 'bg-gradient-to-br from-violet-600 to-violet-900'}
+                    `}>
+                        <div className="text-center p-4 w-full h-full flex flex-col items-center justify-center relative z-10">
+                           {playerRoles[currentPlayerIndex] ? (
+                              // ROL: CHAMUYERO
+                              <div className="animate-fade-in flex flex-col items-center">
+                                 <UserX size={56} className="text-white mb-2 drop-shadow-md" />
+                                 <h3 className="text-2xl font-black text-white uppercase tracking-tighter mb-1">Chamuyero</h3>
+                                 <p className="text-red-200 text-xs font-bold px-4 leading-tight">
+                                    ¡Shhh! Inventa una palabra.
+                                 </p>
+                              </div>
+                           ) : (
+                              // ROL: INOCENTE
+                              <div className="animate-fade-in flex flex-col items-center w-full">
+                                 <p className="text-violet-200 text-xs font-bold uppercase tracking-widest mb-1">Palabra Secreta</p>
+                                 <div className="bg-white/10 w-full py-3 backdrop-blur-sm border-y border-white/20 mb-2">
+                                    <p className="text-3xl font-black text-white uppercase break-words px-2 leading-none">
+                                        {currentWord}
+                                    </p>
+                                 </div>
+                                 <p className="text-violet-300 text-[10px] font-bold uppercase">{selectedCategory}</p>
+                              </div>
+                           )}
+                           
+                           {/* Instrucción pequeña abajo */}
+                           <div className="absolute bottom-6 text-white/40 text-[10px] uppercase font-bold tracking-widest">
+                             Toca para ocultar
+                           </div>
+                        </div>
+                    </div>
+                  </div>
+              </div>
+
+              {/* BOTÓN LISTO */}
+              <div className="w-full px-4">
+                  <button 
                     onClick={handleNextPlayer}
-                    className="w-full py-4 bg-white text-slate-900 rounded-2xl text-xl font-black hover:bg-slate-200 transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+                    className={`w-full py-4 ${THEME.secondary} hover:brightness-110 active:scale-[0.98] rounded-2xl text-slate-900 text-xl font-black uppercase tracking-wide shadow-xl transition-all flex items-center justify-center gap-2`}
                   >
-                    {currentPlayerIndex < numPlayers - 1 ? 'Pasar al Siguiente' : '¡A Discutir!'} <ArrowRight size={28} strokeWidth={3} />
-                </button>
-              </div>
-
-              {/* LA CORTINA DESLIZABLE */}
-              <div 
-                className={`absolute inset-0 ${THEME.bg} transition-transform duration-500 ease-in-out cursor-pointer flex flex-col items-center justify-center z-20 border-b-4 border-slate-700 ${isRevealed ? '-translate-y-full' : 'translate-y-0'}`}
-                onClick={handleReveal}
-              >
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/80"></div>
-                
-                <div className="flex flex-col items-center space-y-6 p-8 w-full max-w-sm relative z-10">
-                    <div className={`w-28 h-28 rounded-full ${THEME.card} flex items-center justify-center border-4 ${THEME.accentBorder} shadow-[0_0_40px_rgba(163,230,53,0.2)] animate-bounce`}>
-                      <span className={`text-5xl font-black ${THEME.secondaryText}`}>{currentPlayerIndex + 1}</span>
-                    </div>
-                    
-                    <div className="text-center">
-                      <h2 className="text-4xl font-black text-white uppercase drop-shadow-md">Jugador {currentPlayerIndex + 1}</h2>
-                      <div className="mt-6">
-                          <p className={`text-white font-bold flex items-center justify-center gap-2 animate-pulse uppercase tracking-widest text-sm`}>
-                              <ChevronUp strokeWidth={3} /> Desliza para ver <ChevronUp strokeWidth={3} />
-                          </p>
-                      </div>
-                    </div>
-                    
-                    <div className="bg-red-500/10 border border-red-500/30 p-3 rounded-lg text-center backdrop-blur-sm">
-                      <p className="text-xs text-red-300 font-bold uppercase tracking-wide">
-                          ⚠️ Protege tu pantalla
-                      </p>
-                    </div>
-                </div>
+                    {currentPlayerIndex < numPlayers - 1 ? 'Listo, Siguiente' : 'Listo, ¡A Jugar!'} 
+                    <ArrowRight size={24} strokeWidth={3} />
+                  </button>
               </div>
 
             </div>
@@ -446,10 +434,7 @@ export default function ElImpostorApp() {
                       <span className={`${THEME.secondaryText} font-bold`}>¡Señalen al Chamuyero!</span>
                       </p>
                       <div className="flex flex-col gap-3">
-                      <button 
-                          onClick={startNewRound}
-                          className={`w-full py-4 ${THEME.primary} ${THEME.primaryHover} rounded-2xl font-black text-white shadow-lg transition flex items-center justify-center gap-2 uppercase text-lg tracking-wide`}
-                      >
+                      <button onClick={startNewRound} className={`w-full py-4 ${THEME.primary} ${THEME.primaryHover} rounded-2xl font-black text-white shadow-lg transition flex items-center justify-center gap-2 uppercase text-lg tracking-wide`}>
                           <RefreshCw size={24} strokeWidth={3} /> Otra Ronda
                       </button>
                       <button onClick={resetGame} className="w-full py-3 bg-transparent border-2 border-slate-600 text-slate-400 hover:text-white hover:border-white rounded-xl font-bold transition uppercase text-sm">
@@ -461,25 +446,6 @@ export default function ElImpostorApp() {
             </div>
           )}
         </div>
-
-        <style>{`
-          @keyframes fade-in {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-          .animate-fade-in {
-            animation: fade-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-          }
-          .animation-delay-2000 { animation-delay: 2s; }
-          .countdown-anim {
-             animation: pulse-scale 1s infinite;
-          }
-          @keyframes pulse-scale {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.1); opacity: 0.8; }
-            100% { transform: scale(1); opacity: 1; }
-          }
-        `}</style>
       </div>
     </>
   );
