@@ -49,11 +49,11 @@ const WORD_CATEGORIES: Record<string, string[]> = {
 
 const CATEGORY_KEYS = Object.keys(WORD_CATEGORIES);
 
-// Tipo para el jugador (Actualizado con foto)
+// Tipo para el jugador
 type Player = {
   id: number;
   name: string;
-  photo?: string; // URL base64 de la imagen
+  photo?: string;
 };
 
 export default function ElImpostorApp() {
@@ -130,21 +130,14 @@ export default function ElImpostorApp() {
       const context = canvas.getContext('2d');
       
       if (context) {
-        // Configurar canvas al tamaño del video
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
-        
-        // Dibujar frame actual
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-        // Obtener data URL
         const photoUrl = canvas.toDataURL('image/png');
         
-        // Guardar en el jugador
         const newPlayers = [...players];
         newPlayers[cameraPlayerIndex].photo = photoUrl;
         setPlayers(newPlayers);
-        
         stopCamera();
       }
     }
@@ -367,7 +360,6 @@ export default function ElImpostorApp() {
                 
                 <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                        {/* Muestra avatares de los primeros 3 jugadores si tienen foto */}
                         <div className="flex -space-x-3">
                            {players.slice(0, 3).map(p => (
                              <div key={p.id} className="w-10 h-10 rounded-full border-2 border-slate-800 bg-slate-700 overflow-hidden">
@@ -439,8 +431,6 @@ export default function ElImpostorApp() {
                     {players.map((player, index) => (
                         <div key={player.id} className="flex items-center gap-2 animate-fade-in">
                             <div className="flex-1 relative flex items-center gap-2">
-                                
-                                {/* BOTÓN DE FOTO / AVATAR */}
                                 <button 
                                   onClick={() => startCamera(index)}
                                   className="w-12 h-12 flex-shrink-0 rounded-xl bg-slate-800 border border-slate-600 overflow-hidden relative hover:border-purple-500 transition-colors group"
@@ -458,8 +448,6 @@ export default function ElImpostorApp() {
                                      </div>
                                    )}
                                 </button>
-
-                                {/* INPUT DE NOMBRE */}
                                 <input 
                                     type="text" 
                                     value={player.name}
@@ -479,7 +467,7 @@ export default function ElImpostorApp() {
                     ))}
                 </div>
 
-                <div className="pt-4 space-y-3 bg-[#0f172a]"> {/* Fondo para que no se vea transparente sobre la lista */}
+                <div className="pt-4 space-y-3 bg-[#0f172a]">
                     <button 
                         onClick={addPlayer}
                         disabled={players.length >= 10}
@@ -555,15 +543,14 @@ export default function ElImpostorApp() {
 
           {/* --- PANTALLA: MONEDA GIRATORIA (PASS & PLAY) --- */}
           {gameStage === 'passAndPlay' && (
-            <div className="flex-1 flex flex-col items-center justify-between py-6 animate-fade-in w-full">
+            <div className="flex-1 flex flex-col items-center w-full h-full relative">
               
-              {/* Header de Turno (AHORA CON NOMBRE REAL) */}
-              <div className="text-center space-y-2">
+              {/* Header de Turno */}
+              <div className="mt-8 text-center space-y-2 flex-shrink-0">
                   <div className={`inline-flex items-center gap-2 px-4 py-1 rounded-full border border-slate-600 ${THEME.card}`}>
                     <Users size={16} className="text-slate-400" />
                     <span className="text-sm font-bold text-slate-300 uppercase">Turno Actual</span>
                   </div>
-                  {/* AQUÍ MOSTRAMOS EL NOMBRE DEL JUGADOR ACTUAL */}
                   <h2 className="text-5xl font-black text-white tracking-tight drop-shadow-lg break-words px-2 leading-none">
                     {players[currentPlayerIndex].name}
                   </h2>
@@ -572,72 +559,68 @@ export default function ElImpostorApp() {
                   </p>
               </div>
 
-              {/* CONTENEDOR DE LA MONEDA */}
-              <div className="perspective-1000 w-72 h-72 cursor-pointer group" onClick={handleFlipCoin}>
-                  <div className={`relative w-full h-full duration-700 transform-style-3d transition-transform ${isCoinFlipped ? 'rotate-y-180' : ''}`}>
-                    
-                    {/* CARA FRONTAL (INCÓGNITA CON FOTO) */}
-                    <div className={`absolute w-full h-full backface-hidden rounded-full border-8 border-slate-800 shadow-[0_0_50px_rgba(0,0,0,0.5)] flex items-center justify-center bg-gradient-to-br from-yellow-400 to-yellow-600 overflow-hidden`}>
-                        {/* Si tiene foto, la mostramos en grande */}
-                        {players[currentPlayerIndex].photo ? (
-                          <>
-                             <img src={players[currentPlayerIndex].photo} alt="Player" className="w-full h-full object-cover" />
-                             {/* Overlay para texto */}
-                             <div className="absolute inset-0 bg-black/30 flex flex-col items-center justify-center">
-                                <Hand size={48} className="text-white mb-2 animate-bounce drop-shadow-md" />
-                                <p className="text-white font-black text-2xl uppercase leading-none drop-shadow-md">Toca para<br/>Girar</p>
-                             </div>
-                          </>
-                        ) : (
-                          // Diseño por defecto si no tiene foto
-                          <div className="text-center p-6 border-4 border-yellow-300/50 rounded-full w-56 h-56 flex flex-col items-center justify-center">
-                             <Hand size={48} className="text-yellow-900 mb-2 animate-bounce" />
-                             <p className="text-yellow-900 font-black text-2xl uppercase leading-none">Toca para<br/>Girar</p>
-                          </div>
-                        )}
+              {/* CONTENEDOR CENTRAL: MONEDA Y TEXTO */}
+              <div className="flex-1 flex flex-col items-center justify-center w-full">
+                  {/* MONEDA */}
+                  <div className="perspective-1000 w-72 h-72 cursor-pointer group mb-6" onClick={handleFlipCoin}>
+                      <div className={`relative w-full h-full duration-700 transform-style-3d transition-transform ${isCoinFlipped ? 'rotate-y-180' : ''}`}>
                         
-                        {/* Brillo */}
-                        <div className="absolute top-0 left-0 w-full h-full rounded-full bg-white opacity-10 pointer-events-none"></div>
-                    </div>
-
-                    {/* CARA TRASERA (INFORMACIÓN) */}
-                    <div className={`absolute w-full h-full backface-hidden rotate-y-180 rounded-full border-8 border-slate-900 shadow-[0_0_60px_rgba(139,92,246,0.5)] flex items-center justify-center overflow-hidden
-                        ${playerRoles[currentPlayerIndex] ? 'bg-gradient-to-br from-red-600 to-red-900' : 'bg-gradient-to-br from-violet-600 to-violet-900'}
-                    `}>
-                        <div className="text-center p-4 w-full h-full flex flex-col items-center justify-center relative z-10">
-                           {playerRoles[currentPlayerIndex] ? (
-                              // ROL: CHAMUYERO
-                              <div className="animate-fade-in flex flex-col items-center">
-                                 <UserX size={56} className="text-white mb-2 drop-shadow-md" />
-                                 <h3 className="text-2xl font-black text-white uppercase tracking-tighter mb-1">Chamuyero</h3>
-                                 <p className="text-red-200 text-xs font-bold px-4 leading-tight">
-                                    ¡Shhh! Inventa una palabra.
-                                 </p>
+                        {/* CARA FRONTAL (INCÓGNITA CON FOTO) */}
+                        <div className={`absolute w-full h-full backface-hidden rounded-full border-8 border-slate-800 shadow-[0_0_50px_rgba(0,0,0,0.5)] flex items-center justify-center bg-gradient-to-br from-yellow-400 to-yellow-600 overflow-hidden`}>
+                            {players[currentPlayerIndex].photo ? (
+                              <img src={players[currentPlayerIndex].photo} alt="Player" className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="flex items-center justify-center">
+                                 <Hand size={80} className="text-yellow-900/50 animate-pulse" />
                               </div>
-                           ) : (
-                              // ROL: INOCENTE
-                              <div className="animate-fade-in flex flex-col items-center w-full">
-                                 <p className="text-violet-200 text-xs font-bold uppercase tracking-widest mb-1">Palabra Secreta</p>
-                                 <div className="bg-white/10 w-full py-3 backdrop-blur-sm border-y border-white/20 mb-2">
-                                    <p className="text-3xl font-black text-white uppercase break-words px-2 leading-none">
-                                        {currentWord}
-                                    </p>
-                                 </div>
-                                 <p className="text-violet-300 text-[10px] font-bold uppercase">{selectedCategory}</p>
-                              </div>
-                           )}
-                           
-                           {/* Instrucción pequeña abajo */}
-                           <div className="absolute bottom-6 text-white/40 text-[10px] uppercase font-bold tracking-widest">
-                             Toca para ocultar
-                           </div>
+                            )}
+                            {/* Brillo */}
+                            <div className="absolute top-0 left-0 w-full h-full rounded-full bg-white opacity-10 pointer-events-none"></div>
                         </div>
-                    </div>
+
+                        {/* CARA TRASERA (INFORMACIÓN) */}
+                        <div className={`absolute w-full h-full backface-hidden rotate-y-180 rounded-full border-8 border-slate-900 shadow-[0_0_60px_rgba(139,92,246,0.5)] flex items-center justify-center overflow-hidden
+                            ${playerRoles[currentPlayerIndex] ? 'bg-gradient-to-br from-red-600 to-red-900' : 'bg-gradient-to-br from-violet-600 to-violet-900'}
+                        `}>
+                            <div className="text-center p-4 w-full h-full flex flex-col items-center justify-center relative z-10">
+                               {playerRoles[currentPlayerIndex] ? (
+                                  <div className="animate-fade-in flex flex-col items-center">
+                                     <UserX size={56} className="text-white mb-2 drop-shadow-md" />
+                                     <h3 className="text-2xl font-black text-white uppercase tracking-tighter mb-1">Chamuyero</h3>
+                                     <p className="text-red-200 text-xs font-bold px-4 leading-tight">
+                                        ¡Shhh! Inventa una palabra.
+                                     </p>
+                                  </div>
+                               ) : (
+                                  <div className="animate-fade-in flex flex-col items-center w-full">
+                                     <p className="text-violet-200 text-xs font-bold uppercase tracking-widest mb-1">Palabra Secreta</p>
+                                     <div className="bg-white/10 w-full py-3 backdrop-blur-sm border-y border-white/20 mb-2">
+                                        <p className="text-3xl font-black text-white uppercase break-words px-2 leading-none">
+                                            {currentWord}
+                                        </p>
+                                     </div>
+                                     <p className="text-violet-300 text-[10px] font-bold uppercase">{selectedCategory}</p>
+                                  </div>
+                               )}
+                            </div>
+                        </div>
+                      </div>
+                  </div>
+
+                  {/* TEXTO DEBAJO DE LA MONEDA */}
+                  <div className="animate-pulse">
+                      <p className="text-slate-400 font-bold uppercase tracking-widest text-sm flex items-center gap-2 bg-slate-800/50 px-4 py-2 rounded-full border border-slate-700">
+                          {isCoinFlipped ? (
+                            <>Toca de nuevo para ocultar</>
+                          ) : (
+                            <><Hand size={16} /> TOCA PARA GIRAR</>
+                          )}
+                      </p>
                   </div>
               </div>
 
-              {/* BOTÓN LISTO */}
-              <div className="w-full px-4">
+              {/* BOTÓN LISTO - Parte Inferior */}
+              <div className="w-full px-4 pb-8 mt-auto">
                   <button 
                     onClick={handleNextPlayer}
                     className={`w-full py-4 ${THEME.secondary} hover:brightness-110 active:scale-[0.98] rounded-2xl text-slate-900 text-xl font-black uppercase tracking-wide shadow-xl transition-all flex items-center justify-center gap-2`}
