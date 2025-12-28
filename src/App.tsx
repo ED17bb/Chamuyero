@@ -506,6 +506,15 @@ export default function ElImpostorApp() {
                   <p className="text-slate-400 font-bold text-center text-sm uppercase tracking-widest">Selecciona una categoría</p>
               </div>
               <div className="flex flex-col gap-3">
+                  {/* --- BOTÓN MEZCLAR TODO (ARRIBA) --- */}
+                  <button 
+                      onClick={() => selectCategory("Todas las anteriores")} 
+                      className={`mb-2 p-6 ${THEME.secondary} rounded-3xl text-slate-900 font-black hover:brightness-110 transition-all text-center flex items-center justify-center gap-4 uppercase tracking-wider text-xl shadow-xl active:scale-[0.98]`}
+                  >
+                      <Layers size={32} />
+                      Mezclar Todo
+                  </button>
+
                   {CATEGORY_KEYS.map((cat, idx) => (
                     <button key={cat} onClick={() => selectCategory(cat)} className={`${THEME.card} p-5 rounded-3xl border border-slate-700 hover:border-purple-500 hover:bg-slate-700 transition-all flex items-center gap-6 group shadow-lg relative overflow-hidden active:scale-[0.98]`}>
                       <div className={`absolute left-0 top-0 bottom-0 w-2 ${idx % 2 === 0 ? THEME.primary : THEME.secondary}`}></div>
@@ -522,10 +531,6 @@ export default function ElImpostorApp() {
                       </div>
                     </button>
                   ))}
-                  <button onClick={() => selectCategory("Todas las anteriores")} className={`mt-4 p-6 ${THEME.secondary} rounded-3xl text-slate-900 font-black hover:brightness-110 transition-all text-center flex items-center justify-center gap-4 uppercase tracking-wider text-xl shadow-xl active:scale-[0.98]`}>
-                      <Layers size={32} />
-                      Mezclar Todo
-                  </button>
               </div>
             </div>
           )}
