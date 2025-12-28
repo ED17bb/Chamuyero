@@ -2,7 +2,7 @@ import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { 
   Users, UserX, Play, ArrowRight, RefreshCw, AlertCircle, Home, Zap,
   Leaf, Coffee, Tv, Trophy, Sparkles, Globe, Ghost, Music, Cpu, Layers, Hand,
-  Plus, Trash2, Edit3, Check, Camera, X, Search
+  Plus, Trash2, Edit3, Check, Camera, X
 } from 'lucide-react';
 
 // --- PALETA DE COLORES PERSONALIZABLE ---
